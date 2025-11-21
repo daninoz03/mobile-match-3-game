@@ -51,6 +51,8 @@
 1. Hierarchy → Create Empty → "GameManager"
 2. Add Component → "GameManager" script
 
+
+
 ## Step 4: Press Play! ▶️
 
 Click the Play button at the top of Unity editor. You should see:
