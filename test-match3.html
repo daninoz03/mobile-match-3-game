@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match-3 Game Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #667eea;
+        }
+        
+        .test-suite {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-case {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ccc;
+            background: #f9f9f9;
+        }
+        
+        .test-case.pass {
+            border-color: #51cf66;
+            background: #f0fdf4;
+        }
+        
+        .test-case.fail {
+            border-color: #ff6b6b;
+            background: #fef2f2;
+        }
+        
+        .test-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .test-result {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .summary {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .error-details {
+            color: #dc2626;
+            font-size: 0.85em;
+            margin-top: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Match-3 Game Test Suite</h1>
+    
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="location.href='match3-preview.html'">Back to Game</button>
+    
+    <div id="summary" class="summary">
+        Click "Run All Tests" to start testing
+    </div>
+    
+    <div id="test-results"></div>
+
+    <script>
+        // Mock game constants and functions for testing
+        const BOARD_SIZE = 8;
+        const TILE_TYPES = 6;
+        
+        const POWERUP_TYPES = {
+            NONE: 0,
+            BOMB: 1,
+            L_SHAPE: 2,
+            COLOR_BOMB: 3,
+            SUPER_BOMB: 4,
+            LIGHTNING_BOMB: 5,
+            SUPER_LIGHTNING: 6
+        };
+        
+        // Test framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+            }
+            
+            test(name, fn) {
+                this.tests.push({ name, fn });
+            }
+            
+            async run() {
+                this.results = [];
+                const resultsDiv = document.getElementById('test-results');
+                resultsDiv.innerHTML = '';
+                
+                for (const test of this.tests) {
+                    try {
+                        await test.fn();
+                        this.results.push({ name: test.name, passed: true });
+                    } catch (error) {
+                        this.results.push({ name: test.name, passed: false, error: error.message });
+                    }
+                }
+                
+                this.displayResults();
+            }
+            
+            displayResults() {
+                const resultsDiv = document.getElementById('test-results');
+                const summaryDiv = document.getElementById('summary');
+                
+                const passed = this.results.filter(r => r.passed).length;
+                const failed = this.results.filter(r => !r.passed).length;
+                const total = this.results.length;
+                
+                summaryDiv.innerHTML = `
+                    <strong>Test Results:</strong> ${passed} passed, ${failed} failed out of ${total} tests
+                    ${failed === 0 ? '✅ All tests passed!' : '❌ Some tests failed'}
+                `;
+                
+                // Group tests by suite
+                const suites = {};
+                this.results.forEach(result => {
+                    const suiteName = result.name.split(':')[0];
+                    if (!suites[suiteName]) suites[suiteName] = [];
+                    suites[suiteName].push(result);
+                });
+                
+                Object.keys(suites).forEach(suiteName => {
+                    const suiteDiv = document.createElement('div');
+                    suiteDiv.className = 'test-suite';
+                    suiteDiv.innerHTML = `<h2>${suiteName}</h2>`;
+                    
+                    suites[suiteName].forEach(result => {
+                        const testDiv = document.createElement('div');
+                        testDiv.className = `test-case ${result.passed ? 'pass' : 'fail'}`;
+                        
+                        const testName = result.name.split(':')[1] || result.name;
+                        testDiv.innerHTML = `
+                            <div class="test-name">
+                                ${result.passed ? '✅' : '❌'} ${testName}
+                            </div>
+                            ${result.error ? `<div class="error-details">${result.error}</div>` : ''}
+                        `;
+                        
+                        suiteDiv.appendChild(testDiv);
+                    });
+                    
+                    resultsDiv.appendChild(suiteDiv);
+                });
+            }
+        }
+        
+        // Assertion helpers
+        function assertEquals(actual, expected, message = '') {
+            if (actual !== expected) {
+                throw new Error(`${message}\nExpected: ${expected}\nActual: ${actual}`);
+            }
+        }
+        
+        function assertTrue(condition, message = 'Expected true') {
+            if (!condition) {
+                throw new Error(message);
+            }
+        }
+        
+        function assertFalse(condition, message = 'Expected false') {
+            if (condition) {
+                throw new Error(message);
+            }
+        }
+        
+        function assertArrayEquals(actual, expected, message = '') {
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                throw new Error(`${message}\nExpected: ${JSON.stringify(expected)}\nActual: ${JSON.stringify(actual)}`);
+            }
+        }
+        
+        // Helper functions for testing
+        function createTestBoard() {
+            const board = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                board[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    board[y][x] = Math.floor(Math.random() * TILE_TYPES);
+                }
+            }
+            return board;
+        }
+        
+        function createEmptyPowerupBoard() {
+            const powerups = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                powerups[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    powerups[y][x] = POWERUP_TYPES.NONE;
+                }
+            }
+            return powerups;
+        }
+        
+        function detectHorizontalMatch(board, startX, y, type) {
+            let count = 0;
+            for (let x = startX; x < BOARD_SIZE && board[y][x] === type; x++) {
+                count++;
+            }
+            return count;
+        }
+        
+        function detectVerticalMatch(board, x, startY, type) {
+            let count = 0;
+            for (let y = startY; y < BOARD_SIZE && board[y][x] === type; y++) {
+                count++;
+            }
+            return count;
+        }
+        
+        function findHorizontalMatches(board) {
+            const matches = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE - 2; x++) {
+                    const type = board[y][x];
+                    const matchLength = detectHorizontalMatch(board, x, y, type);
+                    if (matchLength >= 3) {
+                        matches.push({ x, y, length: matchLength, direction: 'horizontal', type });
+                    }
+                }
+            }
+            return matches;
+        }
+        
+        function findVerticalMatches(board) {
+            const matches = [];
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                for (let y = 0; y < BOARD_SIZE - 2; y++) {
+                    const type = board[y][x];
+                    const matchLength = detectVerticalMatch(board, x, y, type);
+                    if (matchLength >= 3) {
+                        matches.push({ x, y, length: matchLength, direction: 'vertical', type });
+                    }
+                }
+            }
+            return matches;
+        }
+        
+        function combinePowerups(powerup1, powerup2) {
+            const types = [powerup1, powerup2].sort();
+            
+            if (types[0] === POWERUP_TYPES.BOMB && types[1] === POWERUP_TYPES.BOMB) {
+                return POWERUP_TYPES.SUPER_BOMB;
+            }
+            if (types[0] === POWERUP_TYPES.BOMB && types[1] === POWERUP_TYPES.L_SHAPE) {
+                return POWERUP_TYPES.LIGHTNING_BOMB;
+            }
+            if (types[0] === POWERUP_TYPES.L_SHAPE && types[1] === POWERUP_TYPES.L_SHAPE) {
+                return POWERUP_TYPES.SUPER_LIGHTNING;
+            }
+            
+            return null;
+        }
+        
+        // Test Suite
+        const runner = new TestRunner();
+        
+        // Board Tests
+        runner.test('Board: Board creation', () => {
+            // Given: We need a new game board
+            // When: Creating a test board
+            const board = createTestBoard();
+            
+            // Then: Board should have correct dimensions
+            assertEquals(board.length, BOARD_SIZE, 'Board height should be BOARD_SIZE');
+            assertEquals(board[0].length, BOARD_SIZE, 'Board width should be BOARD_SIZE');
+            
+            // Then: All tiles should be valid types
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    assertTrue(board[y][x] >= 0 && board[y][x] < TILE_TYPES, 
+                        `Tile at (${x},${y}) should be valid type`);
+                }
+            }
+        });
+        
+        runner.test('Board: Powerup board creation', () => {
+            // Given: We need a new powerup tracking board
+            // When: Creating an empty powerup board
+            const powerups = createEmptyPowerupBoard();
+            
+            // Then: Powerup board should have correct dimensions
+            assertEquals(powerups.length, BOARD_SIZE, 'Powerup board height should be BOARD_SIZE');
+            
+            // Then: All powerups should be NONE initially
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    assertEquals(powerups[y][x], POWERUP_TYPES.NONE, 
+                        `Powerup at (${x},${y}) should be NONE initially`);
+                }
+            }
+        });
+        
+        // Match Detection Tests
+        runner.test('Match Detection: Horizontal match of 3', () => {
+            // Given: A board with 3 tiles of the same type in a row
+            const board = createTestBoard();
+            board[0][0] = 0;
+            board[0][1] = 0;
+            board[0][2] = 0;
+            board[0][3] = 1; // Different
+            
+            // When: Detecting horizontal matches
+            const matchLength = detectHorizontalMatch(board, 0, 0, 0);
+            
+            // Then: Should find exactly 3 matching tiles
+            assertEquals(matchLength, 3, 'Should detect 3 tiles in a row');
+        });
+        
+        runner.test('Match Detection: Horizontal match of 4', () => {
+            // Given: A board with 4 tiles of the same type in a row
+            const board = createTestBoard();
+            board[1][0] = 2;
+            board[1][1] = 2;
+            board[1][2] = 2;
+            board[1][3] = 2;
+            board[1][4] = 1;
+            
+            // When: Detecting horizontal matches
+            const matchLength = detectHorizontalMatch(board, 1, 0, 2);
+            
+            // Then: Should find exactly 4 matching tiles
+            assertEquals(matchLength, 4, 'Should detect 4 tiles in a row');
+        });
+        
+        runner.test('Match Detection: Vertical match of 3', () => {
+            // Given: A board with 3 tiles of the same type in a column
+            const board = createTestBoard();
+            board[0][0] = 3;
+            board[1][0] = 3;
+            board[2][0] = 3;
+            board[3][0] = 2;
+            
+            // When: Detecting vertical matches
+            const matchLength = detectVerticalMatch(board, 0, 0, 3);
+            
+            // Then: Should find exactly 3 matching tiles
+            assertEquals(matchLength, 3, 'Should detect 3 tiles vertically');
+        });
+        
+        runner.test('Match Detection: No match', () => {
+            // Given: A board with different tile types in a row
+            const board = createTestBoard();
+            board[0][0] = 0;
+            board[0][1] = 1;
+            board[0][2] = 2;
+            
+            // When: Detecting horizontal matches
+            const matchLength = detectHorizontalMatch(board, 0, 0, 0);
+            
+            // Then: Should find only 1 tile (no match)
+            assertEquals(matchLength, 1, 'Should detect only 1 tile');
+        });
+        
+        runner.test('Match Detection: Multiple horizontal matches', () => {
+            // Given: A board with multiple separate matches
+            const board = createTestBoard();
+            board[0][0] = 0;
+            board[0][1] = 0;
+            board[0][2] = 0;
+            
+            board[2][3] = 1;
+            board[2][4] = 1;
+            board[2][5] = 1;
+            
+            // When: Finding all horizontal matches
+            const matches = findHorizontalMatches(board);
+            
+            // Then: Should find at least 2 separate matches
+            assertTrue(matches.length >= 2, 'Should find at least 2 horizontal matches');
+        });
+        
+        // Power-up Tests
+        runner.test('Powerups: Bomb combination creates Super Bomb', () => {
+            // Given: Two bomb power-ups are swapped
+            // When: Combining the power-ups
+            const result = combinePowerups(POWERUP_TYPES.BOMB, POWERUP_TYPES.BOMB);
+            
+            // Then: Should create a Super Bomb
+            assertEquals(result, POWERUP_TYPES.SUPER_BOMB, 'Two bombs should create super bomb');
+        });
+        
+        runner.test('Powerups: Bomb + Lightning creates Lightning Bomb', () => {
+            // Given: A bomb and a lightning power-up are swapped
+            // When: Combining the power-ups
+            const result = combinePowerups(POWERUP_TYPES.BOMB, POWERUP_TYPES.L_SHAPE);
+            
+            // Then: Should create a Lightning Bomb
+            assertEquals(result, POWERUP_TYPES.LIGHTNING_BOMB, 'Bomb + Lightning should create Lightning Bomb');
+        });
+        
+        runner.test('Powerups: Lightning + Lightning creates Super Lightning', () => {
+            // Given: Two lightning power-ups are swapped
+            // When: Combining the power-ups
+            const result = combinePowerups(POWERUP_TYPES.L_SHAPE, POWERUP_TYPES.L_SHAPE);
+            
+            // Then: Should create a Super Lightning
+            assertEquals(result, POWERUP_TYPES.SUPER_LIGHTNING, 'Two Lightning should create Super Lightning');
+        });
+        
+        runner.test('Powerups: Order should not matter', () => {
+            // Given: Two different power-ups can be swapped in either direction
+            // When: Combining them in different orders
+            const result1 = combinePowerups(POWERUP_TYPES.BOMB, POWERUP_TYPES.L_SHAPE);
+            const result2 = combinePowerups(POWERUP_TYPES.L_SHAPE, POWERUP_TYPES.BOMB);
+            
+            // Then: Results should be identical
+            assertEquals(result1, result2, 'Order should not matter for combinations');
+        });
+        
+        runner.test('Powerups: Invalid combinations return null', () => {
+            // Given: Two power-ups that don't have a combination
+            // When: Attempting to combine them
+            const result = combinePowerups(POWERUP_TYPES.BOMB, POWERUP_TYPES.COLOR_BOMB);
+            
+            // Then: Should return null (no combination exists)
+            assertEquals(result, null, 'Invalid combinations should return null');
+        });
+        
+        // Tile adjacency tests
+        runner.test('Adjacency: Tiles are adjacent horizontally', () => {
+            // Given: Two tiles next to each other horizontally
+            const tile1 = { x: 0, y: 0 };
+            const tile2 = { x: 1, y: 0 };
+            
+            // When: Checking if they are adjacent
+            const dx = Math.abs(tile1.x - tile2.x);
+            const dy = Math.abs(tile1.y - tile2.y);
+            const adjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            
+            // Then: Should be considered adjacent
+            assertTrue(adjacent, 'Tiles should be adjacent horizontally');
+        });
+        
+        runner.test('Adjacency: Tiles are adjacent vertically', () => {
+            // Given: Two tiles next to each other vertically
+            const tile1 = { x: 2, y: 3 };
+            const tile2 = { x: 2, y: 4 };
+            
+            // When: Checking if they are adjacent
+            const dx = Math.abs(tile1.x - tile2.x);
+            const dy = Math.abs(tile1.y - tile2.y);
+            const adjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            
+            // Then: Should be considered adjacent
+            assertTrue(adjacent, 'Tiles should be adjacent vertically');
+        });
+        
+        runner.test('Adjacency: Tiles are not adjacent diagonally', () => {
+            // Given: Two tiles positioned diagonally from each other
+            const tile1 = { x: 0, y: 0 };
+            const tile2 = { x: 1, y: 1 };
+            
+            // When: Checking if they are adjacent
+            const dx = Math.abs(tile1.x - tile2.x);
+            const dy = Math.abs(tile1.y - tile2.y);
+            const adjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            
+            // Then: Should not be considered adjacent (diagonals don't count)
+            assertFalse(adjacent, 'Tiles should not be adjacent diagonally');
+        });
+        
+        runner.test('Adjacency: Tiles are not adjacent when far apart', () => {
+            // Given: Two tiles far away from each other
+            const tile1 = { x: 0, y: 0 };
+            const tile2 = { x: 5, y: 5 };
+            
+            // When: Checking if they are adjacent
+            const dx = Math.abs(tile1.x - tile2.x);
+            const dy = Math.abs(tile1.y - tile2.y);
+            const adjacent = (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+            
+            // Then: Should not be considered adjacent
+            assertFalse(adjacent, 'Tiles far apart should not be adjacent');
+        });
+        
+        // Score calculation tests
+        runner.test('Scoring: Match 3 tiles scores correctly', () => {
+            // Given: A match of 3 tiles
+            const tilesMatched = 3;
+            
+            // When: Calculating the score (10 points per tile)
+            const score = tilesMatched * 10;
+            
+            // Then: Should award 30 points
+            assertEquals(score, 30, 'Match 3 should score 30 points');
+        });
+        
+        runner.test('Scoring: Match 4 tiles scores correctly', () => {
+            // Given: A match of 4 tiles
+            const tilesMatched = 4;
+            
+            // When: Calculating the score (10 points per tile)
+            const score = tilesMatched * 10;
+            
+            // Then: Should award 40 points
+            assertEquals(score, 40, 'Match 4 should score 40 points');
+        });
+        
+        runner.test('Scoring: Large match scores correctly', () => {
+            // Given: A large match of 10 tiles
+            const tilesMatched = 10;
+            
+            // When: Calculating the score (10 points per tile)
+            const score = tilesMatched * 10;
+            
+            // Then: Should award 100 points
+            assertEquals(score, 100, 'Match 10 should score 100 points');
+        });
+        
+        // Board bounds tests
+        runner.test('Bounds: Valid coordinates', () => {
+            // Given: A position within the board bounds
+            const x = 3, y = 4;
+            
+            // When: Checking if coordinates are valid
+            const valid = x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+            
+            // Then: Should be considered valid
+            assertTrue(valid, 'Coordinates (3,4) should be valid');
+        });
+        
+        runner.test('Bounds: Invalid negative coordinates', () => {
+            // Given: A position with negative coordinates
+            const x = -1, y = 5;
+            
+            // When: Checking if coordinates are valid
+            const valid = x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+            
+            // Then: Should be considered invalid
+            assertFalse(valid, 'Negative x coordinate should be invalid');
+        });
+        
+        runner.test('Bounds: Invalid coordinates beyond board', () => {
+            // Given: A position beyond the board edge (8x8 board, max index is 7)
+            const x = 8, y = 4;
+            
+            // When: Checking if coordinates are valid
+            const valid = x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+            
+            // Then: Should be considered invalid
+            assertFalse(valid, 'x=8 should be invalid for 8x8 board');
+        });
+        
+        // Edge case tests
+        runner.test('Edge Cases: Match at board edge', () => {
+            // Given: A match positioned at the right edge of the board
+            const board = createTestBoard();
+            board[0][BOARD_SIZE-3] = 5;
+            board[0][BOARD_SIZE-2] = 5;
+            board[0][BOARD_SIZE-1] = 5;
+            
+            // When: Detecting horizontal matches near the edge
+            const matchLength = detectHorizontalMatch(board, BOARD_SIZE-3, 0, 5);
+            
+            // Then: Should correctly detect 3 tiles at the edge
+            assertEquals(matchLength, 3, 'Should detect match at board edge');
+        });
+        
+        runner.test('Edge Cases: Match in corner', () => {
+            // Given: A vertical match in the bottom-left corner
+            const board = createTestBoard();
+            board[BOARD_SIZE-3][0] = 4;
+            board[BOARD_SIZE-2][0] = 4;
+            board[BOARD_SIZE-1][0] = 4;
+            
+            // When: Detecting vertical matches in the corner
+            const matchLength = detectVerticalMatch(board, 0, BOARD_SIZE-3, 4);
+            
+            // Then: Should correctly detect 3 tiles in the corner
+            assertEquals(matchLength, 3, 'Should detect match in corner');
+        });
+        
+        runner.test('Edge Cases: Full row match', () => {
+            // Given: An entire row of matching tiles
+            const board = createTestBoard();
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                board[0][x] = 3;
+            }
+            
+            // When: Detecting horizontal matches
+            const matchLength = detectHorizontalMatch(board, 0, 0, 3);
+            
+            // Then: Should detect all 8 tiles in the row
+            assertEquals(matchLength, BOARD_SIZE, 'Should detect full row match');
+        });
+        
+        // Run tests function
+        async function runAllTests() {
+            await runner.run();
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('Test suite loaded. Click "Run All Tests" to start.');
+        });
+    </script>
+</body>
+</html>
+

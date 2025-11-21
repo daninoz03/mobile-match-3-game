@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Match-3 Game Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            overflow: visible;
+            max-height: none;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: visible;
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .tile {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            will-change: transform;
+        }
+        
+        .tile.swapping {
+            transition: transform 0.3s ease-out, box-shadow 0.2s;
+            z-index: 10;
+        }
+
+        .tile:hover:not(.swapping):not(.matching) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .tile.selected:not(.swapping):not(.matching) {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            border: 3px solid white;
+        }
+        
+        .board.processing .tile {
+            pointer-events: none;
+        }
+        
+        .board.processing .tile:hover {
+            transform: none;
+        }
+
+        .tile.matching {
+            position: relative;
+            z-index: 5;
+        }
+        
+        /* Color-specific match animations */
+        .tile.matching[data-type="0"] { animation: matchRed 0.5s ease-in-out; } /* Red - Burst */
+        .tile.matching[data-type="1"] { animation: matchBlue 0.5s ease-in-out; } /* Blue - Ripple */
+        .tile.matching[data-type="2"] { animation: matchGreen 0.5s ease-in-out; } /* Green - Grow */
+        .tile.matching[data-type="3"] { animation: matchYellow 0.5s ease-in-out; } /* Yellow - Sparkle */
+        .tile.matching[data-type="4"] { animation: matchPurple 0.5s ease-in-out; } /* Purple - Swirl */
+        .tile.matching[data-type="5"] { animation: matchOrange 0.5s ease-in-out; } /* Orange - Flame */
+        
+        /* Red - Explosive burst */
+        @keyframes matchRed {
+            0% { 
+                transform: scale(1) rotate(0deg); 
+                filter: brightness(1) drop-shadow(0 0 0px #ff6b6b);
+            }
+            30% { 
+                transform: scale(1.3) rotate(15deg); 
+                filter: brightness(2) drop-shadow(0 0 20px #ff6b6b);
+            }
+            60% { 
+                transform: scale(1.1) rotate(-10deg); 
+                filter: brightness(1.5) drop-shadow(0 0 15px #ff6b6b);
+            }
+            100% { 
+                transform: scale(0.3) rotate(180deg); 
+                opacity: 0;
+                filter: brightness(3) drop-shadow(0 0 30px #ff6b6b);
+            }
+        }
+        
+        /* Blue - Water ripple */
+        @keyframes matchBlue {
+            0% { 
+                transform: scale(1); 
+                filter: brightness(1) drop-shadow(0 0 0px #4ecdc4);
+                border-radius: 8px;
+            }
+            20% { 
+                transform: scale(1.2); 
+                filter: brightness(1.8) drop-shadow(0 0 15px #4ecdc4);
+                border-radius: 50%;
+            }
+            40% { 
+                transform: scale(0.9); 
+                filter: brightness(1.5) drop-shadow(0 0 25px #4ecdc4);
+                border-radius: 30%;
+            }
+            60% { 
+                transform: scale(1.15); 
+                filter: brightness(1.7) drop-shadow(0 0 20px #4ecdc4);
+                border-radius: 50%;
+            }
+            100% { 
+                transform: scale(0); 
+                opacity: 0;
+                filter: brightness(2.5) drop-shadow(0 0 35px #4ecdc4);
+                border-radius: 50%;
+            }
+        }
+        
+        /* Green - Organic grow */
+        @keyframes matchGreen {
+            0% { 
+                transform: scale(1) translateY(0); 
+                filter: brightness(1) drop-shadow(0 0 0px #51cf66);
+            }
+            25% { 
+                transform: scale(1.2) translateY(-5px); 
+                filter: brightness(1.6) drop-shadow(0 0 15px #51cf66);
+            }
+            50% { 
+                transform: scale(1.4) translateY(-10px); 
+                filter: brightness(2) drop-shadow(0 0 25px #51cf66);
+            }
+            75% { 
+                transform: scale(1.2) translateY(-5px); 
+                filter: brightness(1.8) drop-shadow(0 0 20px #51cf66);
+            }
+            100% { 
+                transform: scale(0) translateY(-15px); 
+                opacity: 0;
+                filter: brightness(2.5) drop-shadow(0 0 30px #51cf66);
+            }
+        }
+        
+        /* Yellow - Sparkle twinkle */
+        @keyframes matchYellow {
+            0% { 
+                transform: scale(1) rotate(0deg); 
+                filter: brightness(1) drop-shadow(0 0 0px #ffd93d);
+            }
+            15% { 
+                transform: scale(1.3) rotate(72deg); 
+                filter: brightness(2.5) drop-shadow(0 0 20px #ffd93d);
+            }
+            30% { 
+                transform: scale(0.9) rotate(144deg); 
+                filter: brightness(1.8) drop-shadow(0 0 15px #ffd93d);
+            }
+            45% { 
+                transform: scale(1.4) rotate(216deg); 
+                filter: brightness(2.8) drop-shadow(0 0 25px #ffd93d);
+            }
+            60% { 
+                transform: scale(0.8) rotate(288deg); 
+                filter: brightness(2) drop-shadow(0 0 18px #ffd93d);
+            }
+            75% { 
+                transform: scale(1.2) rotate(360deg); 
+                filter: brightness(2.5) drop-shadow(0 0 22px #ffd93d);
+            }
+            100% { 
+                transform: scale(0) rotate(360deg); 
+                opacity: 0;
+                filter: brightness(3.5) drop-shadow(0 0 35px #ffd93d);
+            }
+        }
+        
+        /* Purple - Mystic swirl */
+        @keyframes matchPurple {
+            0% { 
+                transform: scale(1) rotate(0deg); 
+                filter: brightness(1) drop-shadow(0 0 0px #a78bfa);
+            }
+            25% { 
+                transform: scale(1.15) rotate(-90deg); 
+                filter: brightness(1.7) hue-rotate(20deg) drop-shadow(0 0 18px #a78bfa);
+            }
+            50% { 
+                transform: scale(1.25) rotate(-180deg); 
+                filter: brightness(2.2) hue-rotate(40deg) drop-shadow(0 0 25px #a78bfa);
+            }
+            75% { 
+                transform: scale(1.1) rotate(-270deg); 
+                filter: brightness(1.9) hue-rotate(60deg) drop-shadow(0 0 20px #a78bfa);
+            }
+            100% { 
+                transform: scale(0) rotate(-360deg); 
+                opacity: 0;
+                filter: brightness(3) hue-rotate(80deg) drop-shadow(0 0 40px #a78bfa);
+            }
+        }
+        
+        /* Orange - Flame flicker */
+        @keyframes matchOrange {
+            0% { 
+                transform: scale(1) translateY(0); 
+                filter: brightness(1) drop-shadow(0 0 0px #ff922b);
+            }
+            20% { 
+                transform: scale(1.2) translateY(-8px) scaleX(0.95); 
+                filter: brightness(2) drop-shadow(0 5px 15px #ff922b);
+            }
+            40% { 
+                transform: scale(1.3) translateY(-12px) scaleX(1.1); 
+                filter: brightness(2.5) drop-shadow(0 8px 20px #ff922b);
+            }
+            60% { 
+                transform: scale(1.15) translateY(-10px) scaleX(0.9); 
+                filter: brightness(2.2) drop-shadow(0 6px 18px #ff922b);
+            }
+            80% { 
+                transform: scale(0.8) translateY(-5px) scaleX(1.2); 
+                filter: brightness(2.8) drop-shadow(0 10px 25px #ff922b);
+            }
+            100% { 
+                transform: scale(0) translateY(-20px); 
+                opacity: 0;
+                filter: brightness(3.5) drop-shadow(0 15px 35px #ff922b);
+            }
+        }
+
+        .tile.falling {
+            transition: transform 0.4s ease-out;
+        }
+        
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 1.2em;
+            z-index: 100;
+            animation: particleFloat 0.8s ease-out forwards;
+        }
+        
+        @keyframes particleFloat {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Tile colors */
+        .tile[data-type="0"] { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); } /* Red */
+        .tile[data-type="1"] { background: linear-gradient(135deg, #4ecdc4, #44a8a1); } /* Blue */
+        .tile[data-type="2"] { background: linear-gradient(135deg, #51cf66, #37b24d); } /* Green */
+        .tile[data-type="3"] { background: linear-gradient(135deg, #ffd93d, #fab005); } /* Yellow */
+        .tile[data-type="4"] { background: linear-gradient(135deg, #a78bfa, #8b5cf6); } /* Purple */
+        .tile[data-type="5"] { background: linear-gradient(135deg, #ff922b, #fd7e14); } /* Orange */
+        
+        /* Power-up tiles */
+        .tile.powerup {
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.3);
+            animation: powerupGlow 1.5s ease-in-out infinite;
+            position: relative;
+            border: 3px solid rgba(255, 215, 0, 0.8);
+        }
+        
+        .tile.powerup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* Super power-ups get even more intense effects */
+        .tile.powerup[data-powerup="4"],
+        .tile.powerup[data-powerup="5"],
+        .tile.powerup[data-powerup="6"] {
+            border: 3px solid rgba(255, 50, 50, 0.9);
+            animation: superPowerupGlow 1s ease-in-out infinite;
+        }
+        
+        @keyframes powerupGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9), inset 0 0 30px rgba(255, 255, 255, 0.5); }
+        }
+        
+        @keyframes superPowerupGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 35px rgba(255, 50, 50, 1), inset 0 0 40px rgba(255, 255, 255, 0.7); }
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .game-over h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+
+        .game-over button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .game-over button:hover {
+            transform: scale(1.05);
+        }
+
+        .instructions {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .tile-icon {
+            font-size: 1.8em;
+        }
+        
+        .powerup-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            z-index: 2;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .info-bar {
+                font-size: 1em;
+                padding: 10px;
+            }
+            
+            .tile {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 Match-3 Game</h1>
+        
+        <div class="info-bar">
+            <div>Score: <span id="score">0</span></div>
+            <div>Moves: <span id="moves">30</span></div>
+            <div>Best Combo: <span id="highestMatch">0</span></div>
+        </div>
+        
+        <div id="board" class="board"></div>
+        
+        <div class="instructions">
+            💡 Click a tile, then click an adjacent tile to swap. Match 3 or more of the same color!<br>
+            💣 Match 4 = Bomb (3x3) | 🌟 L-Shape = Lightning (+ pattern) | 💥 Match 5+ = Color Bomb<br>
+            <small>💥💣 Bomb+Bomb = Super Bomb (5x5) | ⚡💣 Bomb+Lightning = Lightning Bomb (3 rows+cols) | ⚡⚡ Lightning+Lightning = Clear Board!</small>
+        </div>
+        
+        <div id="gameOver" class="game-over">
+            <h2 id="gameOverMessage"></h2>
+            <p>Final Score: <span id="finalScore"></span></p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 8;
+        const TILE_TYPES = 6;
+        const MATCH_MIN = 3;
+        const TARGET_SCORE = 1000;
+        const MOVE_LIMIT = 30;
+
+        const TILE_ICONS = ['💎', '🔷', '💚', '⭐', '🔮', '🧡'];
+        
+        // Power-up types
+        const POWERUP_TYPES = {
+            NONE: 0,
+            BOMB: 1,            // Match 4 - clears 3x3 area
+            L_SHAPE: 2,         // L-shape match - clears large + pattern
+            COLOR_BOMB: 3,      // Match 5+ - clears all of one color
+            SUPER_BOMB: 4,      // Bomb + Bomb - clears 5x5 area
+            LIGHTNING_BOMB: 5,  // Bomb + L_SHAPE - clears 3 rows and 3 columns
+            SUPER_LIGHTNING: 6  // L_SHAPE + L_SHAPE - clears entire board
+        };
+        
+        const POWERUP_ICONS = {
+            1: '💣', // Bomb (3x3 clear)
+            2: '🌟', // L-shape special (lightning)
+            3: '💥', // Color bomb
+            4: '💥💣', // Super bomb
+            5: '⚡💣', // Lightning bomb
+            6: '⚡⚡'  // Super lightning
+        };
+        
+        let board = [];
+        let powerups = []; // Track power-ups separately
+        let selectedTile = null;
+        let score = 0;
+        let movesRemaining = MOVE_LIMIT;
+        let isProcessing = false;
+        let gameOver = false;
+        let highestMatch = 0;
+        let currentMoveMatchCount = 0; // Counts number of separate matches in one move
+        
+        // Audio context for sound effects
+        let audioContext = null;
+        
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        // Play a tone
+        function playTone(frequency, duration, type = 'sine', volume = 0.3) {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // Sound effects
+        const sounds = {
+            swap: () => {
+                playTone(400, 0.1, 'sine', 0.2);
+            },
+            
+            match3: (cascadeLevel = 0) => {
+                const pitchMultiplier = Math.pow(1.1, cascadeLevel); // 10% higher each cascade
+                playTone(523.25 * pitchMultiplier, 0.15, 'sine', 0.25); // C5
+                setTimeout(() => playTone(659.25 * pitchMultiplier, 0.15, 'sine', 0.25), 50); // E5
+                setTimeout(() => playTone(783.99 * pitchMultiplier, 0.2, 'sine', 0.25), 100); // G5
+            },
+            
+            match4: (cascadeLevel = 0) => {
+                const pitchMultiplier = Math.pow(1.1, cascadeLevel);
+                playTone(659.25 * pitchMultiplier, 0.15, 'triangle', 0.3); // E5
+                setTimeout(() => playTone(783.99 * pitchMultiplier, 0.15, 'triangle', 0.3), 50); // G5
+                setTimeout(() => playTone(987.77 * pitchMultiplier, 0.15, 'triangle', 0.3), 100); // B5
+                setTimeout(() => playTone(1046.50 * pitchMultiplier, 0.25, 'triangle', 0.3), 150); // C6
+            },
+            
+            match5: (cascadeLevel = 0) => {
+                const pitchMultiplier = Math.pow(1.1, cascadeLevel);
+                playTone(523.25 * pitchMultiplier, 0.1, 'square', 0.25); // C5
+                setTimeout(() => playTone(659.25 * pitchMultiplier, 0.1, 'square', 0.25), 60); // E5
+                setTimeout(() => playTone(783.99 * pitchMultiplier, 0.1, 'square', 0.25), 120); // G5
+                setTimeout(() => playTone(1046.50 * pitchMultiplier, 0.1, 'square', 0.25), 180); // C6
+                setTimeout(() => playTone(1318.51 * pitchMultiplier, 0.3, 'square', 0.3), 240); // E6
+            },
+            
+            bomb: () => {
+                // Powerful explosion sound
+                if (!audioContext) initAudio();
+                
+                // Deep bass thump
+                const bassOsc = audioContext.createOscillator();
+                const bassGain = audioContext.createGain();
+                
+                bassOsc.type = 'sine';
+                bassOsc.frequency.setValueAtTime(80, audioContext.currentTime);
+                bassOsc.frequency.exponentialRampToValueAtTime(20, audioContext.currentTime + 0.3);
+                
+                bassGain.gain.setValueAtTime(0.6, audioContext.currentTime);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                bassOsc.connect(bassGain);
+                bassGain.connect(audioContext.destination);
+                
+                bassOsc.start(audioContext.currentTime);
+                bassOsc.stop(audioContext.currentTime + 0.3);
+                
+                // Mid-frequency punch
+                const midOsc = audioContext.createOscillator();
+                const midGain = audioContext.createGain();
+                
+                midOsc.type = 'triangle';
+                midOsc.frequency.setValueAtTime(150, audioContext.currentTime);
+                midOsc.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.2);
+                
+                midGain.gain.setValueAtTime(0.4, audioContext.currentTime);
+                midGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                midOsc.connect(midGain);
+                midGain.connect(audioContext.destination);
+                
+                midOsc.start(audioContext.currentTime);
+                midOsc.stop(audioContext.currentTime + 0.2);
+                
+                // White noise burst
+                const bufferSize = audioContext.sampleRate * 0.4;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+                }
+                
+                const noiseSource = audioContext.createBufferSource();
+                const noiseGain = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+                
+                noiseSource.buffer = buffer;
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(2000, audioContext.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.3);
+                
+                noiseSource.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+                
+                noiseGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                
+                noiseSource.start();
+            },
+            
+            shuffle: () => {
+                playTone(200, 0.1, 'sawtooth', 0.2);
+                setTimeout(() => playTone(300, 0.1, 'sawtooth', 0.2), 50);
+                setTimeout(() => playTone(400, 0.1, 'sawtooth', 0.2), 100);
+                setTimeout(() => playTone(500, 0.15, 'sawtooth', 0.2), 150);
+            }
+        };
+
+        // Initialize the game
+        function initGame() {
+            board = createBoard();
+            powerups = createPowerupBoard();
+            score = 0;
+            movesRemaining = MOVE_LIMIT;
+            gameOver = false;
+            selectedTile = null;
+            isProcessing = false;
+            highestMatch = 0;
+            currentMoveMatchCount = 0;
+            
+            // Ensure no initial matches
+            while (hasMatches()) {
+                board = createBoard();
+                powerups = createPowerupBoard();
+            }
+            
+            renderBoard();
+            updateUI();
+            document.getElementById('gameOver').classList.remove('show');
+        }
+
+        // Create a new board
+        function createBoard() {
+            const newBoard = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                newBoard[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    newBoard[y][x] = Math.floor(Math.random() * TILE_TYPES);
+                }
+            }
+            return newBoard;
+        }
+        
+        // Create empty powerup board
+        function createPowerupBoard() {
+            const newPowerups = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                newPowerups[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    newPowerups[y][x] = POWERUP_TYPES.NONE;
+                }
+            }
+            return newPowerups;
+        }
+
+        // Render the board to HTML
+        function renderBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.x = x;
+                    tile.dataset.y = y;
+                    tile.dataset.type = board[y][x];
+                    
+                    // Check if this tile has a power-up
+                    const powerupType = powerups[y][x];
+                    if (powerupType !== POWERUP_TYPES.NONE) {
+                        tile.classList.add('powerup');
+                        tile.dataset.powerup = powerupType;
+                        // Show both the base tile icon (smaller) and power-up icon
+                        tile.innerHTML = `
+                            <span class="tile-icon" style="font-size: 0.8em; opacity: 0.7;">${TILE_ICONS[board[y][x]]}</span>
+                            <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
+                        `;
+                    } else {
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                    }
+                    
+                    tile.onclick = () => handleTileClick(x, y);
+                    boardElement.appendChild(tile);
+                }
+            }
+        }
+
+        // Handle tile click
+        function handleTileClick(x, y) {
+            if (isProcessing || gameOver) return;
+            
+            // Initialize audio on first interaction
+            initAudio();
+            
+            const clickedTile = { x, y };
+            
+            if (selectedTile === null) {
+                // Select the tile
+                selectedTile = clickedTile;
+                highlightTile(x, y, true);
+            } else if (selectedTile.x === x && selectedTile.y === y) {
+                // Deselect if clicking the same tile
+                highlightTile(x, y, false);
+                selectedTile = null;
+            } else if (areAdjacent(selectedTile, clickedTile)) {
+                // Try to swap
+                highlightTile(selectedTile.x, selectedTile.y, false);
+                swapTiles(selectedTile, clickedTile);
+                selectedTile = null;
+            } else {
+                // Select new tile
+                highlightTile(selectedTile.x, selectedTile.y, false);
+                selectedTile = clickedTile;
+                highlightTile(x, y, true);
+            }
+        }
+
+        // Highlight tile
+        function highlightTile(x, y, highlight) {
+            const tile = getTileElement(x, y);
+            if (tile) {
+                if (highlight) {
+                    tile.classList.add('selected');
+                } else {
+                    tile.classList.remove('selected');
+                }
+            }
+        }
+
+        // Get tile DOM element
+        function getTileElement(x, y) {
+            return document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        }
+
+        // Check if tiles are adjacent
+        function areAdjacent(tile1, tile2) {
+            const dx = Math.abs(tile1.x - tile2.x);
+            const dy = Math.abs(tile1.y - tile2.y);
+            return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+        }
+
+        // Swap two tiles
+        async function swapTiles(tile1, tile2) {
+            isProcessing = true;
+            document.getElementById('board').classList.add('processing');
+            currentMoveMatchCount = 0; // Reset counter for this move
+            
+            try {
+            
+            // Get tile elements
+            const tile1Element = getTileElement(tile1.x, tile1.y);
+            const tile2Element = getTileElement(tile2.x, tile2.y);
+            
+            if (!tile1Element || !tile2Element) {
+                document.getElementById('board').classList.remove('processing');
+                isProcessing = false;
+                return;
+            }
+            
+            // Get the actual positions
+            const rect1 = tile1Element.getBoundingClientRect();
+            const rect2 = tile2Element.getBoundingClientRect();
+            
+            // Calculate pixel distances
+            const dx = rect2.left - rect1.left;
+            const dy = rect2.top - rect1.top;
+            
+            // Add swapping class for transition
+            tile1Element.classList.add('swapping');
+            tile2Element.classList.add('swapping');
+            
+            // Animate the swap using transforms
+            tile1Element.style.transform = `translate(${dx}px, ${dy}px)`;
+            tile2Element.style.transform = `translate(${-dx}px, ${-dy}px)`;
+            
+            // Play swap sound
+            sounds.swap();
+            
+            await sleep(300);
+            
+            // Swap in board data
+            const temp = board[tile1.y][tile1.x];
+            board[tile1.y][tile1.x] = board[tile2.y][tile2.x];
+            board[tile2.y][tile2.x] = temp;
+            
+            // Also swap power-ups
+            const tempPowerup = powerups[tile1.y][tile1.x];
+            powerups[tile1.y][tile1.x] = powerups[tile2.y][tile2.x];
+            powerups[tile2.y][tile2.x] = tempPowerup;
+            
+            // Reset transforms and render
+            tile1Element.style.transform = '';
+            tile2Element.style.transform = '';
+            tile1Element.classList.remove('swapping');
+            tile2Element.classList.remove('swapping');
+            
+            renderBoard();
+            await sleep(50);
+            
+            // Check if both tiles are power-ups - create combined power-up
+            const tile1Powerup = powerups[tile1.y][tile1.x];
+            const tile2Powerup = powerups[tile2.y][tile2.x];
+            
+            if (tile1Powerup !== POWERUP_TYPES.NONE && tile2Powerup !== POWERUP_TYPES.NONE) {
+                // Two power-ups being swapped - create combined power-up
+                const combinedPowerup = combinePowerups(tile1Powerup, tile2Powerup);
+                
+                if (combinedPowerup) {
+                    sounds.bomb(); // Play special sound
+                    
+                    // Animate flash effect
+                    const tile1Element = getTileElement(tile1.x, tile1.y);
+                    const tile2Element = getTileElement(tile2.x, tile2.y);
+                    if (tile1Element) tile1Element.classList.add('matching');
+                    if (tile2Element) tile2Element.classList.add('matching');
+                    
+                    await sleep(300);
+                    
+                    // Remove both power-ups
+                    board[tile1.y][tile1.x] = -1;
+                    board[tile2.y][tile2.x] = -1;
+                    powerups[tile1.y][tile1.x] = POWERUP_TYPES.NONE;
+                    powerups[tile2.y][tile2.x] = POWERUP_TYPES.NONE;
+                    
+                    renderBoard();
+                    await sleep(200);
+                    
+                    // Activate the combined power-up effect immediately at tile2 location
+                    const affectedTiles = activatePowerup({
+                        x: tile2.x,
+                        y: tile2.y,
+                        type: combinedPowerup,
+                        color: null
+                    });
+                    
+                    // Mark affected tiles for removal (except tile2 where super tile will be)
+                    affectedTiles.forEach(tile => {
+                        if (!(tile.x === tile2.x && tile.y === tile2.y)) {
+                            board[tile.y][tile.x] = -1;
+                            powerups[tile.y][tile.x] = POWERUP_TYPES.NONE;
+                        }
+                    });
+                    
+                    // Add score and track matches for this move
+                    score += affectedTiles.length * 10;
+                    currentMoveMatchCount += 1; // Count this as one match event
+                    updateUI();
+                    
+                    renderBoard();
+                    await sleep(200);
+                    
+                    // Drop tiles and refill
+                    await dropAndRefillWithAnimation();
+                    
+                    // Create the combined power-up at tile2 location
+                    const tileType = Math.floor(Math.random() * TILE_TYPES); // Random color for combo
+                    board[tile2.y][tile2.x] = tileType;
+                    powerups[tile2.y][tile2.x] = combinedPowerup;
+                    
+                    renderBoard();
+                    
+                    movesRemaining--;
+                    updateUI();
+                    
+                    // Process any resulting matches
+                    await processMatches();
+                    
+                    document.getElementById('board').classList.remove('processing');
+                    isProcessing = false;
+                    return;
+                }
+            }
+            
+            // Check for matches
+            const matchGroups = findAllMatchesDetailed();
+            
+            if (matchGroups.length > 0) {
+                // Valid move - check if we need to create power-ups
+                const largestMatch = matchGroups.reduce((max, group) => 
+                    group.length > max.length ? group : max
+                , matchGroups[0]);
+                
+                let powerupLocation = null;
+                
+                // Create power-up at tile2 location if match is 4+ or L-shape
+                // The color should be from the matched tiles
+                const matchedTileType = largestMatch.type;
+                
+                if (largestMatch.direction === 'L-shape') {
+                    const corner = largestMatch.corner || { x: tile2.x, y: tile2.y };
+                    createPowerup(corner.x, corner.y, largestMatch.length, largestMatch.direction, corner, matchedTileType);
+                    powerupLocation = corner;
+                    sounds.match5(0); // L-shape gets special sound, cascade level 0
+                } else if (largestMatch.length >= 5) {
+                    createPowerup(tile2.x, tile2.y, largestMatch.length, largestMatch.direction, null, matchedTileType);
+                    powerupLocation = { x: tile2.x, y: tile2.y };
+                    sounds.match5(0);
+                } else if (largestMatch.length === 4) {
+                    createPowerup(tile2.x, tile2.y, largestMatch.length, largestMatch.direction, null, matchedTileType);
+                    powerupLocation = { x: tile2.x, y: tile2.y };
+                    sounds.match4(0);
+                } else {
+                    sounds.match3(0);
+                }
+                
+                movesRemaining--;
+                updateUI();
+                await processMatches(powerupLocation);
+            } else {
+                // Invalid move - animate swap back
+                const tile1ElementNew = getTileElement(tile1.x, tile1.y);
+                const tile2ElementNew = getTileElement(tile2.x, tile2.y);
+                
+                if (tile1ElementNew && tile2ElementNew) {
+                    tile1ElementNew.classList.add('swapping');
+                    tile2ElementNew.classList.add('swapping');
+                    
+                    tile1ElementNew.style.transform = `translate(${dx}px, ${dy}px)`;
+                    tile2ElementNew.style.transform = `translate(${-dx}px, ${-dy}px)`;
+                    
+                    await sleep(300);
+                    
+                    // Swap back in data
+                    const temp = board[tile1.y][tile1.x];
+                    board[tile1.y][tile1.x] = board[tile2.y][tile2.x];
+                    board[tile2.y][tile2.x] = temp;
+                    
+                    // Also swap back power-ups
+                    const tempPowerup = powerups[tile1.y][tile1.x];
+                    powerups[tile1.y][tile1.x] = powerups[tile2.y][tile2.x];
+                    powerups[tile2.y][tile2.x] = tempPowerup;
+                    
+                    tile1ElementNew.style.transform = '';
+                    tile2ElementNew.style.transform = '';
+                    tile1ElementNew.classList.remove('swapping');
+                    tile2ElementNew.classList.remove('swapping');
+                    
+                    renderBoard();
+                }
+            }
+            
+            checkGameOver();
+            
+            // Update highest match if this move beat the record
+            if (currentMoveMatchCount > highestMatch) {
+                highestMatch = currentMoveMatchCount;
+                updateUI();
+            }
+            
+            } catch (error) {
+                console.error('Error in swapTiles:', error);
+            } finally {
+                document.getElementById('board').classList.remove('processing');
+                isProcessing = false;
+            }
+        }
+
+        // Detect L-shaped matches
+        function detectLShapes() {
+            const lShapes = [];
+            
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const type = board[y][x];
+                    
+                    // Check all 4 L orientations with at least 3 tiles in each direction
+                    
+                    // L shape: ─┐ (right then down)
+                    if (x + 2 < BOARD_SIZE && y + 2 < BOARD_SIZE) {
+                        let horizCount = 0;
+                        while (x + horizCount < BOARD_SIZE && board[y][x + horizCount] === type) horizCount++;
+                        
+                        let vertCount = 0;
+                        while (y + vertCount < BOARD_SIZE && board[y + vertCount][x + horizCount - 1] === type) vertCount++;
+                        
+                        if (horizCount >= 3 && vertCount >= 3) {
+                            const tiles = [];
+                            for (let i = 0; i < horizCount; i++) tiles.push({ x: x + i, y: y });
+                            for (let i = 1; i < vertCount; i++) tiles.push({ x: x + horizCount - 1, y: y + i });
+                            lShapes.push({ tiles, corner: { x: x + horizCount - 1, y: y }, type });
+                        }
+                    }
+                    
+                    // L shape: ┌─ (down then right)
+                    if (x + 2 < BOARD_SIZE && y + 2 < BOARD_SIZE) {
+                        let vertCount = 0;
+                        while (y + vertCount < BOARD_SIZE && board[y + vertCount][x] === type) vertCount++;
+                        
+                        let horizCount = 0;
+                        while (x + horizCount < BOARD_SIZE && board[y + vertCount - 1][x + horizCount] === type) horizCount++;
+                        
+                        if (vertCount >= 3 && horizCount >= 3) {
+                            const tiles = [];
+                            for (let i = 0; i < vertCount; i++) tiles.push({ x: x, y: y + i });
+                            for (let i = 1; i < horizCount; i++) tiles.push({ x: x + i, y: y + vertCount - 1 });
+                            lShapes.push({ tiles, corner: { x: x, y: y + vertCount - 1 }, type });
+                        }
+                    }
+                    
+                    // L shape: └─ (up then right)
+                    if (x + 2 < BOARD_SIZE && y - 2 >= 0) {
+                        let vertCount = 0;
+                        while (y - vertCount >= 0 && board[y - vertCount][x] === type) vertCount++;
+                        
+                        let horizCount = 0;
+                        while (x + horizCount < BOARD_SIZE && board[y - vertCount + 1][x + horizCount] === type) horizCount++;
+                        
+                        if (vertCount >= 3 && horizCount >= 3) {
+                            const tiles = [];
+                            for (let i = 0; i < vertCount; i++) tiles.push({ x: x, y: y - i });
+                            for (let i = 1; i < horizCount; i++) tiles.push({ x: x + i, y: y - vertCount + 1 });
+                            lShapes.push({ tiles, corner: { x: x, y: y - vertCount + 1 }, type });
+                        }
+                    }
+                    
+                    // L shape: ─┘ (left then up)
+                    if (x - 2 >= 0 && y - 2 >= 0) {
+                        let horizCount = 0;
+                        while (x - horizCount >= 0 && board[y][x - horizCount] === type) horizCount++;
+                        
+                        let vertCount = 0;
+                        while (y - vertCount >= 0 && board[y - vertCount][x - horizCount + 1] === type) vertCount++;
+                        
+                        if (horizCount >= 3 && vertCount >= 3) {
+                            const tiles = [];
+                            for (let i = 0; i < horizCount; i++) tiles.push({ x: x - i, y: y });
+                            for (let i = 1; i < vertCount; i++) tiles.push({ x: x - horizCount + 1, y: y - i });
+                            lShapes.push({ tiles, corner: { x: x - horizCount + 1, y: y }, type });
+                        }
+                    }
+                }
+            }
+            
+            return lShapes;
+        }
+        
+        // Find all matches on the board with detailed info
+        function findAllMatchesDetailed() {
+            const matchGroups = [];
+            const processedTiles = new Set();
+            
+            // First check for L-shapes (priority)
+            const lShapes = detectLShapes();
+            lShapes.forEach(lShape => {
+                matchGroups.push({
+                    tiles: lShape.tiles,
+                    length: lShape.tiles.length,
+                    direction: 'L-shape',
+                    type: lShape.type,
+                    corner: lShape.corner
+                });
+                lShape.tiles.forEach(tile => {
+                    processedTiles.add(`${tile.x},${tile.y}`);
+                });
+            });
+            
+            // Check horizontal matches
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE - 2; x++) {
+                    if (processedTiles.has(`${x},${y}`)) continue;
+                    
+                    const type = board[y][x];
+                    let matchLength = 1;
+                    
+                    for (let i = 1; x + i < BOARD_SIZE && board[y][x + i] === type; i++) {
+                        matchLength++;
+                    }
+                    
+                    if (matchLength >= MATCH_MIN) {
+                        const tiles = [];
+                        for (let i = 0; i < matchLength; i++) {
+                            tiles.push({ x: x + i, y: y });
+                            processedTiles.add(`${x + i},${y}`);
+                        }
+                        matchGroups.push({
+                            tiles: tiles,
+                            length: matchLength,
+                            direction: 'horizontal',
+                            type: type
+                        });
+                    }
+                }
+            }
+            
+            // Check vertical matches
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                for (let y = 0; y < BOARD_SIZE - 2; y++) {
+                    if (processedTiles.has(`${x},${y}`)) continue;
+                    
+                    const type = board[y][x];
+                    let matchLength = 1;
+                    
+                    for (let i = 1; y + i < BOARD_SIZE && board[y + i][x] === type; i++) {
+                        matchLength++;
+                    }
+                    
+                    if (matchLength >= MATCH_MIN) {
+                        const tiles = [];
+                        for (let i = 0; i < matchLength; i++) {
+                            tiles.push({ x: x, y: y + i });
+                        }
+                        matchGroups.push({
+                            tiles: tiles,
+                            length: matchLength,
+                            direction: 'vertical',
+                            type: type
+                        });
+                    }
+                }
+            }
+            
+            return matchGroups;
+        }
+        
+        // Find all matches on the board (simple version)
+        function findAllMatches() {
+            const matchGroups = findAllMatchesDetailed();
+            const allTiles = new Set();
+            
+            matchGroups.forEach(group => {
+                group.tiles.forEach(tile => {
+                    allTiles.add(`${tile.x},${tile.y}`);
+                });
+            });
+            
+            return Array.from(allTiles).map(coord => {
+                const [x, y] = coord.split(',').map(Number);
+                return { x, y };
+            });
+        }
+
+        // Check if board has any matches
+        function hasMatches() {
+            return findAllMatches().length > 0;
+        }
+        
+        // Check if there are any possible moves on the board
+        function hasPossibleMoves() {
+            // Check all possible swaps
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    // Try swapping with tile to the right
+                    if (x < BOARD_SIZE - 1) {
+                        // Simulate swap
+                        const temp = board[y][x];
+                        board[y][x] = board[y][x + 1];
+                        board[y][x + 1] = temp;
+                        
+                        // Check if this creates a match
+                        const hasMatch = findAllMatches().length > 0;
+                        
+                        // Swap back
+                        board[y][x + 1] = board[y][x];
+                        board[y][x] = temp;
+                        
+                        if (hasMatch) return true;
+                    }
+                    
+                    // Try swapping with tile below
+                    if (y < BOARD_SIZE - 1) {
+                        // Simulate swap
+                        const temp = board[y][x];
+                        board[y][x] = board[y + 1][x];
+                        board[y + 1][x] = temp;
+                        
+                        // Check if this creates a match
+                        const hasMatch = findAllMatches().length > 0;
+                        
+                        // Swap back
+                        board[y + 1][x] = board[y][x];
+                        board[y][x] = temp;
+                        
+                        if (hasMatch) return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        // Shuffle the board with animation
+        async function shuffleBoard() {
+            console.log('No possible moves - shuffling board!');
+            
+            // Play shuffle sound
+            sounds.shuffle();
+            
+            // Show shuffle message
+            const boardElement = document.getElementById('board');
+            const shuffleMsg = document.createElement('div');
+            shuffleMsg.style.position = 'absolute';
+            shuffleMsg.style.top = '50%';
+            shuffleMsg.style.left = '50%';
+            shuffleMsg.style.transform = 'translate(-50%, -50%)';
+            shuffleMsg.style.fontSize = '2em';
+            shuffleMsg.style.fontWeight = 'bold';
+            shuffleMsg.style.color = '#FFD700';
+            shuffleMsg.style.textShadow = '0 0 10px rgba(255, 215, 0, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.8)';
+            shuffleMsg.style.zIndex = '1000';
+            shuffleMsg.style.pointerEvents = 'none';
+            shuffleMsg.textContent = '🔀 Shuffling...';
+            boardElement.parentElement.style.position = 'relative';
+            boardElement.parentElement.appendChild(shuffleMsg);
+            
+            // Collect all tiles and their powerups
+            const tiles = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    tiles.push({
+                        type: board[y][x],
+                        powerup: powerups[y][x]
+                    });
+                }
+            }
+            
+            // Shuffle the tiles array (Fisher-Yates shuffle)
+            for (let i = tiles.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+            }
+            
+            // Create mapping of where each tile should go
+            const moves = [];
+            let tileIndex = 0;
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const oldTile = { type: board[y][x], powerup: powerups[y][x] };
+                    const newTile = tiles[tileIndex];
+                    
+                    if (oldTile.type !== newTile.type || oldTile.powerup !== newTile.powerup) {
+                        moves.push({
+                            x, y,
+                            oldType: oldTile.type,
+                            oldPowerup: oldTile.powerup,
+                            newType: newTile.type,
+                            newPowerup: newTile.powerup
+                        });
+                    }
+                    
+                    tileIndex++;
+                }
+            }
+            
+            // Animate tiles flying out
+            const allTiles = document.querySelectorAll('.tile');
+            allTiles.forEach((tile, index) => {
+                const angle = (index / allTiles.length) * Math.PI * 2;
+                const distance = 200;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                
+                tile.style.transition = 'transform 0.4s ease-in, opacity 0.4s ease-in';
+                tile.style.transform = `translate(${dx}px, ${dy}px) rotate(${angle * 180 / Math.PI}deg) scale(0.5)`;
+                tile.style.opacity = '0';
+            });
+            
+            await sleep(400);
+            
+            // Update board data
+            tileIndex = 0;
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    board[y][x] = tiles[tileIndex].type;
+                    powerups[y][x] = tiles[tileIndex].powerup;
+                    tileIndex++;
+                }
+            }
+            
+            // Render new board with tiles off-screen
+            boardElement.innerHTML = '';
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.x = x;
+                    tile.dataset.y = y;
+                    tile.dataset.type = board[y][x];
+                    
+                    const powerupType = powerups[y][x];
+                    if (powerupType !== POWERUP_TYPES.NONE) {
+                        tile.classList.add('powerup');
+                        tile.dataset.powerup = powerupType;
+                        tile.innerHTML = `
+                            <span class="tile-icon" style="font-size: 0.8em; opacity: 0.7;">${TILE_ICONS[board[y][x]]}</span>
+                            <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
+                        `;
+                    } else {
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                    }
+                    
+                    tile.onclick = () => handleTileClick(x, y);
+                    
+                    // Start from random off-screen position
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 300;
+                    const dx = Math.cos(angle) * distance;
+                    const dy = Math.sin(angle) * distance;
+                    
+                    tile.style.transform = `translate(${dx}px, ${dy}px) rotate(${angle * 180 / Math.PI}deg) scale(0.5)`;
+                    tile.style.opacity = '0';
+                    tile.style.transition = 'transform 0.5s ease-out, opacity 0.5s ease-out';
+                    
+                    boardElement.appendChild(tile);
+                }
+            }
+            
+            await sleep(50);
+            
+            // Animate tiles flying in
+            const newTiles = document.querySelectorAll('.tile');
+            newTiles.forEach(tile => {
+                tile.style.transform = '';
+                tile.style.opacity = '1';
+            });
+            
+            await sleep(500);
+            
+            // Clean up
+            newTiles.forEach(tile => {
+                tile.style.transition = '';
+            });
+            
+            // Remove shuffle message
+            if (shuffleMsg && shuffleMsg.parentElement) {
+                shuffleMsg.remove();
+            }
+            
+            // If still no moves after shuffle, shuffle again
+            if (!hasPossibleMoves()) {
+                await shuffleBoard();
+            }
+        }
+        
+        // Combine two power-ups when they're swapped
+        function combinePowerups(powerup1, powerup2) {
+            // Sort to make order not matter
+            const types = [powerup1, powerup2].sort();
+            
+            // Bomb + Bomb = Super Bomb
+            if (types[0] === POWERUP_TYPES.BOMB && types[1] === POWERUP_TYPES.BOMB) {
+                return POWERUP_TYPES.SUPER_BOMB;
+            }
+            
+            // Bomb + L_SHAPE (Lightning) = Lightning Bomb
+            if (types[0] === POWERUP_TYPES.BOMB && types[1] === POWERUP_TYPES.L_SHAPE) {
+                return POWERUP_TYPES.LIGHTNING_BOMB;
+            }
+            
+            // L_SHAPE + L_SHAPE = Super Lightning
+            if (types[0] === POWERUP_TYPES.L_SHAPE && types[1] === POWERUP_TYPES.L_SHAPE) {
+                return POWERUP_TYPES.SUPER_LIGHTNING;
+            }
+            
+            // Other combinations just activate both normally
+            return null;
+        }
+        
+        // Create a power-up at the specified location
+        function createPowerup(x, y, matchLength, direction, corner = null, tileType = null) {
+            if (direction === 'L-shape') {
+                // L-shape match: Special star power-up
+                const cornerPos = corner || { x, y };
+                powerups[cornerPos.y][cornerPos.x] = POWERUP_TYPES.L_SHAPE;
+                // Keep the tile color
+                if (tileType !== null) {
+                    board[cornerPos.y][cornerPos.x] = tileType;
+                }
+            } else if (matchLength >= 5) {
+                // Match 5+: Color Bomb
+                powerups[y][x] = POWERUP_TYPES.COLOR_BOMB;
+                // Keep the tile color
+                if (tileType !== null) {
+                    board[y][x] = tileType;
+                }
+            } else if (matchLength === 4) {
+                // Match 4: Bomb (3x3 area clear)
+                powerups[y][x] = POWERUP_TYPES.BOMB;
+                // Keep the tile color
+                if (tileType !== null) {
+                    board[y][x] = tileType;
+                }
+            }
+        }
+
+        // Count unique match groups (treats overlapping matches of same color as one)
+        function countUniqueMatches(matchGroups) {
+            if (matchGroups.length === 0) return 0;
+            
+            // Build a map of which tiles belong to which match groups
+            const tileToGroups = new Map();
+            matchGroups.forEach((group, groupIndex) => {
+                group.tiles.forEach(tile => {
+                    const key = `${tile.x},${tile.y}`;
+                    if (!tileToGroups.has(key)) {
+                        tileToGroups.set(key, []);
+                    }
+                    tileToGroups.get(key).push(groupIndex);
+                });
+            });
+            
+            // Use union-find to merge overlapping groups of the same color
+            const parent = Array.from({ length: matchGroups.length }, (_, i) => i);
+            
+            function find(x) {
+                if (parent[x] !== x) {
+                    parent[x] = find(parent[x]);
+                }
+                return parent[x];
+            }
+            
+            function union(x, y) {
+                const rootX = find(x);
+                const rootY = find(y);
+                if (rootX !== rootY) {
+                    parent[rootX] = rootY;
+                }
+            }
+            
+            // Merge groups that share tiles and have the same color
+            tileToGroups.forEach(groups => {
+                if (groups.length > 1) {
+                    // Multiple groups share this tile - merge them if same color
+                    for (let i = 0; i < groups.length; i++) {
+                        for (let j = i + 1; j < groups.length; j++) {
+                            if (matchGroups[groups[i]].type === matchGroups[groups[j]].type) {
+                                union(groups[i], groups[j]);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Count unique roots
+            const uniqueRoots = new Set();
+            for (let i = 0; i < matchGroups.length; i++) {
+                uniqueRoots.add(find(i));
+            }
+            
+            return uniqueRoots.size;
+        }
+        
+        // Process matches (remove, drop, refill)
+        async function processMatches(keepTileLocation = null) {
+            let matchGroups = findAllMatchesDetailed();
+            let isFirstPass = true;
+            let cascadeLevel = 0;
+            
+            while (matchGroups.length > 0) {
+                // Check for power-ups in the matches and activate them
+                const tilesToRemove = new Set();
+                const powerupsToActivate = [];
+                let newPowerupToCreate = null;
+                
+                // Get all tiles from match groups
+                matchGroups.forEach(group => {
+                    group.tiles.forEach(match => {
+                        // If this is the first pass and this tile is where we're creating a power-up, skip it
+                        if (isFirstPass && keepTileLocation && 
+                            match.x === keepTileLocation.x && match.y === keepTileLocation.y) {
+                            return; // Don't remove this tile
+                        }
+                        
+                        tilesToRemove.add(`${match.x},${match.y}`);
+                        
+                        // Check if this tile has a power-up
+                        if (powerups[match.y][match.x] !== POWERUP_TYPES.NONE) {
+                            powerupsToActivate.push({
+                                x: match.x,
+                                y: match.y,
+                                type: powerups[match.y][match.x],
+                                color: board[match.y][match.x]
+                            });
+                        }
+                    });
+                });
+                
+                // For cascade matches (not first pass), check if we should create a power-up
+                if (!isFirstPass && matchGroups.length > 0) {
+                    // Find the largest match
+                    const largestMatch = matchGroups.reduce((max, group) => 
+                        group.length > max.length ? group : max
+                    , matchGroups[0]);
+                    
+                    // Create power-up for cascade matches of 4+
+                    if (largestMatch.length >= 4 || largestMatch.direction === 'L-shape') {
+                        // Find center tile of the match that's being removed
+                        const centerIndex = Math.floor(largestMatch.tiles.length / 2);
+                        const centerTile = largestMatch.tiles[centerIndex];
+                        
+                        // Don't remove the center tile - it will become the power-up
+                        tilesToRemove.delete(`${centerTile.x},${centerTile.y}`);
+                        
+                        newPowerupToCreate = {
+                            x: centerTile.x,
+                            y: centerTile.y,
+                            length: largestMatch.length,
+                            direction: largestMatch.direction,
+                            corner: largestMatch.corner,
+                            tileType: largestMatch.type
+                        };
+                        
+                        // Play appropriate sound with cascade level
+                        if (largestMatch.direction === 'L-shape' || largestMatch.length >= 5) {
+                            sounds.match5(cascadeLevel);
+                        } else if (largestMatch.length === 4) {
+                            sounds.match4(cascadeLevel);
+                        }
+                    } else {
+                        // Regular 3-match sound
+                        sounds.match3(cascadeLevel);
+                    }
+                }
+                
+                // Activate power-ups and add their affected tiles
+                for (const powerup of powerupsToActivate) {
+                    // Play bomb sound for power-ups
+                    sounds.bomb();
+                    
+                    const affectedTiles = activatePowerup(powerup);
+                    affectedTiles.forEach(tile => {
+                        tilesToRemove.add(`${tile.x},${tile.y}`);
+                    });
+                }
+                
+                // Convert back to array
+                const allMatches = Array.from(tilesToRemove).map(coord => {
+                    const [x, y] = coord.split(',').map(Number);
+                    return { x, y };
+                });
+                
+                // Highlight matching tiles and spawn particles
+                allMatches.forEach(match => {
+                    const tile = getTileElement(match.x, match.y);
+                    if (tile) {
+                        tile.classList.add('matching');
+                        spawnMatchParticles(tile, board[match.y][match.x]);
+                    }
+                });
+                
+                await sleep(300);
+                
+                // Add score and track matches for this move
+                score += allMatches.length * 10;
+                
+                // Count unique match groups (merge overlapping matches of same color)
+                const uniqueMatches = countUniqueMatches(matchGroups);
+                currentMoveMatchCount += uniqueMatches;
+                updateUI();
+                
+                // Remove matched tiles and their power-ups
+                allMatches.forEach(match => {
+                    board[match.y][match.x] = -1; // Mark as empty
+                    powerups[match.y][match.x] = POWERUP_TYPES.NONE;
+                });
+                
+                // Create new power-up from cascade match if needed
+                if (newPowerupToCreate) {
+                    createPowerup(
+                        newPowerupToCreate.x,
+                        newPowerupToCreate.y,
+                        newPowerupToCreate.length,
+                        newPowerupToCreate.direction,
+                        newPowerupToCreate.corner,
+                        newPowerupToCreate.tileType
+                    );
+                }
+                
+                renderBoard();
+                await sleep(200);
+                
+                // Drop tiles with animation
+                await dropAndRefillWithAnimation();
+                
+                // Check for new matches (no longer first pass)
+                isFirstPass = false;
+                cascadeLevel++; // Increment cascade level for next iteration
+                matchGroups = findAllMatchesDetailed();
+            }
+            
+            // After all matches are cleared, check if there are possible moves
+            if (!hasPossibleMoves()) {
+                await sleep(500);
+                await shuffleBoard();
+            }
+        }
+        
+        // Activate a power-up and return affected tiles
+        function activatePowerup(powerup) {
+            const affected = [];
+            
+            switch (powerup.type) {
+                case POWERUP_TYPES.BOMB:
+                    // Clear 3x3 area around the bomb
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const nx = powerup.x + dx;
+                            const ny = powerup.y + dy;
+                            if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE && board[ny][nx] !== -1) {
+                                affected.push({ x: nx, y: ny });
+                            }
+                        }
+                    }
+                    break;
+                    
+                case POWERUP_TYPES.L_SHAPE:
+                    // Clear large + pattern (5x5 plus shape)
+                    // Clear horizontal line
+                    for (let dx = -2; dx <= 2; dx++) {
+                        const nx = powerup.x + dx;
+                        if (nx >= 0 && nx < BOARD_SIZE && board[powerup.y][nx] !== -1) {
+                            affected.push({ x: nx, y: powerup.y });
+                        }
+                    }
+                    // Clear vertical line
+                    for (let dy = -2; dy <= 2; dy++) {
+                        const ny = powerup.y + dy;
+                        if (ny >= 0 && ny < BOARD_SIZE && board[ny][powerup.x] !== -1) {
+                            affected.push({ x: powerup.x, y: ny });
+                        }
+                    }
+                    break;
+                    
+                case POWERUP_TYPES.COLOR_BOMB:
+                    // Clear all tiles of the same color
+                    for (let y = 0; y < BOARD_SIZE; y++) {
+                        for (let x = 0; x < BOARD_SIZE; x++) {
+                            if (board[y][x] === powerup.color && board[y][x] !== -1) {
+                                affected.push({ x, y });
+                            }
+                        }
+                    }
+                    break;
+                    
+                case POWERUP_TYPES.SUPER_BOMB:
+                    // Clear 5x5 area around the bomb (2 tiles away)
+                    for (let dy = -2; dy <= 2; dy++) {
+                        for (let dx = -2; dx <= 2; dx++) {
+                            const nx = powerup.x + dx;
+                            const ny = powerup.y + dy;
+                            if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE && board[ny][nx] !== -1) {
+                                affected.push({ x: nx, y: ny });
+                            }
+                        }
+                    }
+                    break;
+                    
+                case POWERUP_TYPES.LIGHTNING_BOMB:
+                    // Clear 3 rows and 3 columns centered on the tile
+                    // Clear rows (y-1, y, y+1)
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const ny = powerup.y + dy;
+                        if (ny >= 0 && ny < BOARD_SIZE) {
+                            for (let x = 0; x < BOARD_SIZE; x++) {
+                                if (board[ny][x] !== -1) {
+                                    affected.push({ x, y: ny });
+                                }
+                            }
+                        }
+                    }
+                    // Clear columns (x-1, x, x+1)
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = powerup.x + dx;
+                        if (nx >= 0 && nx < BOARD_SIZE) {
+                            for (let y = 0; y < BOARD_SIZE; y++) {
+                                if (board[y][nx] !== -1) {
+                                    affected.push({ x: nx, y });
+                                }
+                            }
+                        }
+                    }
+                    break;
+                    
+                case POWERUP_TYPES.SUPER_LIGHTNING:
+                    // Clear ALL tiles on the board!
+                    for (let y = 0; y < BOARD_SIZE; y++) {
+                        for (let x = 0; x < BOARD_SIZE; x++) {
+                            if (board[y][x] !== -1) {
+                                affected.push({ x, y });
+                            }
+                        }
+                    }
+                    break;
+            }
+            
+            return affected;
+        }
+
+        // Drop tiles down to fill empty spaces with animation
+        async function dropAndRefillWithAnimation() {
+            const boardElement = document.getElementById('board');
+            const moveData = []; // Track which tiles are moving and from where
+            
+            // Calculate all movements - scan from BOTTOM to TOP
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                let emptySpaces = 0;
+                
+                // Count empty spaces from bottom up
+                for (let y = BOARD_SIZE - 1; y >= 0; y--) {
+                    if (board[y][x] === -1) {
+                        emptySpaces++;
+                    } else if (emptySpaces > 0) {
+                        // This tile needs to drop down
+                        moveData.push({
+                            x: x,
+                            fromY: y,
+                            toY: y + emptySpaces,
+                            type: board[y][x],
+                            isNew: false
+                        });
+                        board[y + emptySpaces][x] = board[y][x];
+                        board[y][x] = -1;
+                        
+                        // Also move power-ups down
+                        powerups[y + emptySpaces][x] = powerups[y][x];
+                        powerups[y][x] = POWERUP_TYPES.NONE;
+                    }
+                }
+                
+                // Add new tiles from top (they will be at the top after existing tiles drop)
+                for (let i = 0; i < emptySpaces; i++) {
+                    const y = i; // Fill from top: 0, 1, 2, etc.
+                    const newType = Math.floor(Math.random() * TILE_TYPES);
+                    board[y][x] = newType;
+                    powerups[y][x] = POWERUP_TYPES.NONE; // New tiles have no power-ups
+                    moveData.push({
+                        x: x,
+                        fromY: -(i + 1), // Start above the board (negative Y)
+                        toY: y,
+                        type: newType,
+                        isNew: true
+                    });
+                }
+            }
+            
+            // Render board with tiles at their starting positions
+            boardElement.innerHTML = '';
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile falling';
+                    tile.dataset.x = x;
+                    tile.dataset.y = y;
+                    tile.dataset.type = board[y][x];
+                    
+                    // Check if this tile has a power-up
+                    const powerupType = powerups[y][x];
+                    if (powerupType !== POWERUP_TYPES.NONE) {
+                        tile.classList.add('powerup');
+                        tile.dataset.powerup = powerupType;
+                        // Show both the base tile icon (smaller) and power-up icon
+                        tile.innerHTML = `
+                            <span class="tile-icon" style="font-size: 0.8em; opacity: 0.7;">${TILE_ICONS[board[y][x]]}</span>
+                            <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
+                        `;
+                    } else {
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                    }
+                    
+                    tile.onclick = () => handleTileClick(x, y);
+                    
+                    // Find if this tile is moving
+                    const movement = moveData.find(m => m.x === x && m.toY === y);
+                    if (movement) {
+                        const distance = (movement.toY - movement.fromY);
+                        tile.style.transform = `translateY(${-distance * 100}%)`;
+                    }
+                    
+                    boardElement.appendChild(tile);
+                }
+            }
+            
+            // Trigger animation by resetting transform after a brief delay
+            await sleep(50);
+            
+            // Animate all tiles to their final positions
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const tile = getTileElement(x, y);
+                    if (tile && tile.style.transform) {
+                        tile.style.transform = '';
+                    }
+                }
+            }
+            
+            await sleep(450); // Wait for animation to complete
+            
+            // Clean up classes
+            document.querySelectorAll('.tile').forEach(tile => {
+                tile.classList.remove('falling');
+            });
+        }
+        
+        // Old dropTiles function (kept for backward compatibility)
+        function dropTiles() {
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                let emptySpaces = 0;
+                
+                // Count empty spaces from bottom up
+                for (let y = BOARD_SIZE - 1; y >= 0; y--) {
+                    if (board[y][x] === -1) {
+                        emptySpaces++;
+                    } else if (emptySpaces > 0) {
+                        board[y + emptySpaces][x] = board[y][x];
+                        board[y][x] = -1;
+                        
+                        // Also move power-ups
+                        powerups[y + emptySpaces][x] = powerups[y][x];
+                        powerups[y][x] = POWERUP_TYPES.NONE;
+                    }
+                }
+                
+                // Fill top with new tiles
+                for (let y = 0; y < emptySpaces; y++) {
+                    board[y][x] = Math.floor(Math.random() * TILE_TYPES);
+                    powerups[y][x] = POWERUP_TYPES.NONE;
+                }
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('moves').textContent = movesRemaining;
+            document.getElementById('highestMatch').textContent = highestMatch;
+        }
+
+        // Check game over conditions
+        function checkGameOver() {
+            if (score >= TARGET_SCORE) {
+                endGame('🎉 You Win! 🎉');
+            } else if (movesRemaining <= 0) {
+                endGame('😢 Game Over!');
+            }
+        }
+
+        // End the game
+        function endGame(message) {
+            gameOver = true;
+            document.getElementById('gameOverMessage').textContent = message;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.add('show');
+        }
+
+        // Restart the game
+        function restartGame() {
+            initGame();
+        }
+        
+        // Emergency reset if board gets stuck
+        function resetBoard() {
+            isProcessing = false;
+            document.getElementById('board').classList.remove('processing');
+            renderBoard();
+            console.log('Board reset - you can now interact again');
+        }
+        
+        // Add keyboard shortcut for emergency reset (press 'R' key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') {
+                if (isProcessing) {
+                    console.log('Emergency reset triggered by R key');
+                    resetBoard();
+                }
+            }
+        });
+
+        // Sleep utility
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Spawn particles for matched tiles
+        function spawnMatchParticles(tile, tileType) {
+            const rect = tile.getBoundingClientRect();
+            const boardRect = document.getElementById('board').getBoundingClientRect();
+            
+            // Particle icons based on tile type
+            const particleIcons = {
+                0: ['✨', '💎', '⭐'], // Red - sparkles and gems
+                1: ['💧', '🔷', '💠'], // Blue - water drops
+                2: ['🌿', '💚', '🍃'], // Green - leaves
+                3: ['⭐', '✨', '🌟'], // Yellow - stars
+                4: ['🔮', '✨', '💜'], // Purple - magic
+                5: ['🔥', '🧡', '💥']  // Orange - fire
+            };
+            
+            const icons = particleIcons[tileType] || ['✨'];
+            const particleCount = 5 + Math.floor(Math.random() * 3); // 5-7 particles
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.textContent = icons[Math.floor(Math.random() * icons.length)];
+                
+                // Random direction
+                const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+                const distance = 30 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance - 20; // Slight upward bias
+                
+                particle.style.cssText = `
+                    left: ${rect.left - boardRect.left + rect.width / 2}px;
+                    top: ${rect.top - boardRect.top + rect.height / 2}px;
+                    --tx: ${tx}px;
+                    --ty: ${ty}px;
+                `;
+                
+                document.getElementById('board').appendChild(particle);
+                
+                // Remove after animation
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+
+        // Start the game when page loads
+        initGame();
+    </script>
+</body>
+</html>
+
