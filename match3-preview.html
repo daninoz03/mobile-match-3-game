@@ -707,7 +707,12 @@
                             <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
                         `;
                     } else {
-                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]] || ''}</span>`;
+                    }
+                    
+                    // Hide empty tiles (cleared but not yet refilled)
+                    if (board[y][x] === -1) {
+                        tile.style.visibility = 'hidden';
                     }
                     
                     tile.onclick = () => handleTileClick(x, y);
@@ -1316,7 +1321,12 @@
                             <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
                         `;
                     } else {
-                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]] || ''}</span>`;
+                    }
+                    
+                    // Hide empty tiles (cleared but not yet refilled)
+                    if (board[y][x] === -1) {
+                        tile.style.visibility = 'hidden';
                     }
                     
                     tile.onclick = () => handleTileClick(x, y);
@@ -1784,7 +1794,12 @@
                             <span class="powerup-icon">${POWERUP_ICONS[powerupType]}</span>
                         `;
                     } else {
-                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]]}</span>`;
+                        tile.innerHTML = `<span class="tile-icon">${TILE_ICONS[board[y][x]] || ''}</span>`;
+                    }
+                    
+                    // Hide empty tiles (cleared but not yet refilled)
+                    if (board[y][x] === -1) {
+                        tile.style.visibility = 'hidden';
                     }
                     
                     tile.onclick = () => handleTileClick(x, y);
