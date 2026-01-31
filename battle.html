@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Battle - Kingdom Warriors</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
+            min-height: 100vh;
+            color: #f0e6d3;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .battle-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* ============ TOP BAR ============ */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .back-btn {
+            background: rgba(60,40,80,0.8);
+            border: 2px solid #5a4070;
+            color: #f0e6d3;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .turn-info {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .turn-info span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* ============ ENEMY SECTION ============ */
+        .enemy-section {
+            flex: 0 0 auto;
+            padding: 10px;
+            background: linear-gradient(180deg, rgba(60,20,20,0.8) 0%, rgba(40,10,10,0.6) 100%);
+            border-radius: 15px;
+            margin-bottom: 8px;
+            border: 2px solid #8b0000;
+        }
+
+        .wave-info {
+            text-align: center;
+            font-size: 0.85em;
+            color: #ff8888;
+            margin-bottom: 8px;
+        }
+
+        .enemies-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .enemy {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            min-width: 70px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .enemy.dead {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .enemy.targeted {
+            box-shadow: 0 0 15px rgba(255,0,0,0.6);
+            border: 2px solid #ff4444;
+        }
+
+        .enemy.hit {
+            animation: enemyHit 0.3s ease-out;
+        }
+
+        @keyframes enemyHit {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); filter: brightness(2); }
+            75% { transform: translateX(10px); }
+        }
+
+        .enemy-icon {
+            font-size: 2.2em;
+            margin-bottom: 5px;
+        }
+
+        .enemy-name {
+            font-size: 0.7em;
+            color: #ccc;
+            margin-bottom: 3px;
+        }
+
+        .enemy-hp-bar {
+            width: 60px;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .enemy-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff8888);
+            transition: width 0.3s;
+        }
+
+        .enemy-hp-text {
+            font-size: 0.65em;
+            color: #ff8888;
+            margin-top: 2px;
+        }
+
+        /* ============ MATCH-3 BOARD ============ */
+        .board-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 5px 0;
+            min-height: 0;
+        }
+
+        .combo-display {
+            text-align: center;
+            height: 28px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 12px;
+            border: 2px solid #4a3060;
+            position: relative;
+            overflow: visible;
+        }
+
+        .board.processing .tile {
+            pointer-events: none;
+        }
+
+        .tile {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            user-select: none;
+            position: relative;
+            will-change: transform;
+            overflow: hidden;
+        }
+
+        /* Element Colors - matching hero elements */
+        .tile[data-type="0"] { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); } /* Fire */
+        .tile[data-type="1"] { background: linear-gradient(135deg, #4ecdc4, #44a3a0); } /* Water */
+        .tile[data-type="2"] { background: linear-gradient(135deg, #51cf66, #40a852); } /* Nature */
+        .tile[data-type="3"] { background: linear-gradient(135deg, #ffd43b, #fab005); } /* Holy */
+        .tile[data-type="4"] { background: linear-gradient(135deg, #cc5de8, #9c36b5); } /* Dark */
+
+        .tile:hover:not(.swapping):not(.matching) {
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .tile.selected:not(.swapping):not(.matching) {
+            transform: scale(1.12);
+            box-shadow: 0 0 20px rgba(255,255,255,0.8);
+            border: 3px solid white;
+        }
+
+        .tile.swapping {
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 10;
+        }
+
+        /* Color-specific match animations - smooth and satisfying */
+        .tile.matching[data-type="0"] { animation: matchRed 0.6s ease-in-out forwards; }
+        .tile.matching[data-type="1"] { animation: matchBlue 0.6s ease-in-out forwards; }
+        .tile.matching[data-type="2"] { animation: matchGreen 0.6s ease-in-out forwards; }
+        .tile.matching[data-type="3"] { animation: matchYellow 0.6s ease-in-out forwards; }
+        .tile.matching[data-type="4"] { animation: matchPurple 0.6s ease-in-out forwards; }
+
+        @keyframes matchRed {
+            0% { transform: scale(1) rotate(0deg); filter: brightness(1) drop-shadow(0 0 0px #ff6b6b); }
+            30% { transform: scale(1.3) rotate(15deg); filter: brightness(2) drop-shadow(0 0 20px #ff6b6b); }
+            60% { transform: scale(1.1) rotate(-10deg); filter: brightness(1.5) drop-shadow(0 0 15px #ff6b6b); }
+            100% { transform: scale(0.3) rotate(180deg); opacity: 0; filter: brightness(3) drop-shadow(0 0 30px #ff6b6b); }
+        }
+
+        @keyframes matchBlue {
+            0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0px #4ecdc4); border-radius: 8px; }
+            20% { transform: scale(1.2); filter: brightness(1.8) drop-shadow(0 0 15px #4ecdc4); border-radius: 50%; }
+            40% { transform: scale(0.9); filter: brightness(1.5) drop-shadow(0 0 25px #4ecdc4); border-radius: 30%; }
+            60% { transform: scale(1.15); filter: brightness(1.7) drop-shadow(0 0 20px #4ecdc4); border-radius: 50%; }
+            100% { transform: scale(0); opacity: 0; filter: brightness(2.5) drop-shadow(0 0 35px #4ecdc4); border-radius: 50%; }
+        }
+
+        @keyframes matchGreen {
+            0% { transform: scale(1) translateY(0); filter: brightness(1) drop-shadow(0 0 0px #51cf66); }
+            25% { transform: scale(1.2) translateY(-5px); filter: brightness(1.6) drop-shadow(0 0 15px #51cf66); }
+            50% { transform: scale(1.4) translateY(-10px); filter: brightness(2) drop-shadow(0 0 25px #51cf66); }
+            75% { transform: scale(1.2) translateY(-5px); filter: brightness(1.8) drop-shadow(0 0 20px #51cf66); }
+            100% { transform: scale(0) translateY(-15px); opacity: 0; filter: brightness(2.5) drop-shadow(0 0 30px #51cf66); }
+        }
+
+        @keyframes matchYellow {
+            0% { transform: scale(1); filter: brightness(1); }
+            20% { transform: scale(1.1); filter: brightness(1.5) drop-shadow(0 0 15px #ffd43b); }
+            40% { transform: scale(1.2); filter: brightness(2) drop-shadow(0 0 20px #ffd43b); }
+            60% { transform: scale(1.15); filter: brightness(2.5) drop-shadow(0 0 30px #fff); }
+            80% { transform: scale(1.25); filter: brightness(3) drop-shadow(0 0 40px #fff); }
+            100% { transform: scale(0); opacity: 0; filter: brightness(4) drop-shadow(0 0 50px #fff); }
+        }
+
+        @keyframes matchPurple {
+            0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+            25% { transform: scale(1.1) rotate(90deg); filter: brightness(1.5) drop-shadow(0 0 15px #cc5de8); }
+            50% { transform: scale(1.2) rotate(180deg); filter: brightness(2) drop-shadow(0 0 25px #cc5de8); }
+            75% { transform: scale(1.1) rotate(270deg); filter: brightness(1.8) drop-shadow(0 0 20px #cc5de8); }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; filter: brightness(2.5) drop-shadow(0 0 35px #cc5de8); }
+        }
+
+        .tile.dropping {
+            animation: dropIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+            50% { opacity: 1; }
+            75% { transform: translateY(8px) scale(1.02); }
+            90% { transform: translateY(-3px) scale(0.98); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        /* Power-up tiles */
+        .tile.powerup {
+            position: relative;
+            animation: powerupCreated 0.5s ease-out;
+        }
+
+        @keyframes powerupCreated {
+            0% { transform: scale(1.5); filter: brightness(2); }
+            50% { transform: scale(0.9); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        .tile.powerup-bomb { 
+            box-shadow: inset 0 0 20px rgba(255,100,0,0.9), 0 0 15px rgba(255,100,0,0.6);
+            animation: bombPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes bombPulse {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(255,100,0,0.9), 0 0 10px rgba(255,100,0,0.4); }
+            50% { box-shadow: inset 0 0 25px rgba(255,150,0,1), 0 0 20px rgba(255,100,0,0.8); }
+        }
+
+        .tile.powerup-lightning { 
+            box-shadow: inset 0 0 20px rgba(255,255,0,0.9), 0 0 15px rgba(255,255,0,0.6);
+            animation: lightningPulse 0.8s ease-in-out infinite;
+        }
+
+        @keyframes lightningPulse {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(255,255,0,0.9), 0 0 10px rgba(255,255,0,0.4); }
+            50% { box-shadow: inset 0 0 30px rgba(255,255,100,1), 0 0 25px rgba(255,255,0,0.9); }
+        }
+
+        .tile.powerup-colorbomb { 
+            background: linear-gradient(135deg, #ff0000, #ff7700, #ffff00, #00ff00, #0077ff, #7700ff) !important;
+            animation: rainbowPulse 1s infinite;
+            box-shadow: 0 0 20px rgba(255,255,255,0.8);
+        }
+
+        @keyframes rainbowPulse {
+            0%, 100% { filter: brightness(1); box-shadow: 0 0 15px rgba(255,255,255,0.6); }
+            50% { filter: brightness(1.4); box-shadow: 0 0 30px rgba(255,255,255,1); }
+        }
+
+        .powerup-icon {
+            position: absolute;
+            font-size: 0.9em;
+            bottom: 0;
+            right: 0;
+            text-shadow: 0 0 8px rgba(255,255,255,1), 0 0 15px rgba(255,255,255,0.8);
+            animation: iconBounce 1s ease-in-out infinite;
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .tile-icon {
+            font-size: 1em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .powerup-icon {
+            position: absolute;
+            font-size: 0.7em;
+            bottom: 2px;
+            right: 2px;
+            text-shadow: 0 0 5px rgba(255,255,255,0.8);
+        }
+
+        /* ============ HERO TEAM SECTION ============ */
+        .hero-section {
+            flex: 0 0 auto;
+            padding: 10px;
+            background: linear-gradient(180deg, rgba(40,30,60,0.9) 0%, rgba(20,15,30,0.95) 100%);
+            border-radius: 15px;
+            border: 2px solid #5a4070;
+            margin-top: 8px;
+        }
+
+        .heroes-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .hero-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            min-width: 55px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .hero-slot:hover {
+            background: rgba(60,40,80,0.5);
+        }
+
+        .hero-slot.ready {
+            animation: readyPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes readyPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255,215,0,0.3); }
+            50% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+        }
+
+        .hero-slot[data-element="fire"] { border: 2px solid #ff6b6b; }
+        .hero-slot[data-element="water"] { border: 2px solid #4ecdc4; }
+        .hero-slot[data-element="nature"] { border: 2px solid #51cf66; }
+        .hero-slot[data-element="holy"] { border: 2px solid #ffd43b; }
+        .hero-slot[data-element="dark"] { border: 2px solid #cc5de8; }
+
+        .hero-icon {
+            font-size: 1.6em;
+            margin-bottom: 2px;
+        }
+
+        .hero-mana-bar {
+            width: 45px;
+            height: 5px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        .hero-mana-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4488ff, #88bbff);
+            transition: width 0.3s;
+        }
+
+        .hero-mana-fill.full {
+            background: linear-gradient(90deg, #ffd700, #ffee88);
+        }
+
+        .hero-hp-bar {
+            width: 45px;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+
+        .hero-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #44cc44, #88ff88);
+            transition: width 0.3s;
+        }
+
+        .hero-slot.dead {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        /* ============ DAMAGE NUMBERS ============ */
+        .damage-number {
+            position: absolute;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ff4444;
+            text-shadow: 0 0 10px rgba(255,0,0,0.5), 2px 2px 0 #000;
+            animation: damageFloat 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .damage-number.heal {
+            color: #44ff44;
+            text-shadow: 0 0 10px rgba(0,255,0,0.5), 2px 2px 0 #000;
+        }
+
+        .damage-number.mana {
+            color: #44aaff;
+            font-size: 0.9em;
+        }
+
+        @keyframes damageFloat {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+        }
+
+        /* ============ ABILITY ACTIVATION ============ */
+        .ability-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .ability-overlay.active {
+            display: flex;
+            animation: abilityFlash 0.8s ease-out;
+        }
+
+        @keyframes abilityFlash {
+            0% { background: rgba(255,255,255,0.8); }
+            100% { background: rgba(0,0,0,0.8); }
+        }
+
+        .ability-hero-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: abilityZoom 0.5s ease-out;
+        }
+
+        @keyframes abilityZoom {
+            0% { transform: scale(0) rotate(-180deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .ability-name {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .ability-desc {
+            font-size: 1em;
+            color: #ccc;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        /* ============ BATTLE END ============ */
+        .battle-result {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .battle-result.active {
+            display: flex;
+        }
+
+        .result-title {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .result-title.victory {
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255,215,0,0.5);
+        }
+
+        .result-title.defeat {
+            color: #ff4444;
+            text-shadow: 0 0 30px rgba(255,0,0,0.5);
+        }
+
+        .result-rewards {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .reward-item {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .result-btn {
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a0a2e;
+        }
+
+        .result-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="battle-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="back-btn" onclick="retreatBattle()">← Retreat</button>
+            <div class="turn-info">Turn: <span id="turn-count">1</span></div>
+        </div>
+
+        <!-- Enemy Section -->
+        <div class="enemy-section">
+            <div class="wave-info">Wave <span id="wave-num">1</span>/3</div>
+            <div class="enemies-row" id="enemies-row"></div>
+        </div>
+
+        <!-- Board Section -->
+        <div class="board-section">
+            <div class="combo-display" id="combo-display"></div>
+            <div class="board" id="board"></div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="heroes-row" id="heroes-row"></div>
+        </div>
+    </div>
+
+    <!-- Ability Overlay -->
+    <div class="ability-overlay" id="ability-overlay">
+        <div class="ability-hero-icon" id="ability-hero-icon">⚔️</div>
+        <div class="ability-name" id="ability-name">Special Attack</div>
+        <div class="ability-desc" id="ability-desc">Deals massive damage!</div>
+    </div>
+
+    <!-- Battle Result -->
+    <div class="battle-result" id="battle-result">
+        <div class="result-title" id="result-title">VICTORY!</div>
+        <div class="result-rewards" id="result-rewards"></div>
+        <button class="result-btn" onclick="endBattle()">Continue</button>
+    </div>
+
+    <script>
+        // ============ CONSTANTS ============
+        const BOARD_SIZE = 8;
+        const TILE_TYPES = 5;
+        const ELEMENTS = ['fire', 'water', 'nature', 'holy', 'dark'];
+        const ELEMENT_ICONS = ['🔥', '💧', '🌿', '☀️', '🌙'];
+        const MANA_PER_TILE = 15;
+        const MAX_MANA = 100;
+
+        // Power-up types
+        const POWERUP_TYPES = {
+            NONE: 0,
+            BOMB: 1,        // Match 4 - clears 3x3 area
+            LIGHTNING: 2,   // L-shape - clears row + column
+            COLOR_BOMB: 3   // Match 5+ - clears all of one color
+        };
+
+        const POWERUP_ICONS = {
+            1: '💣',
+            2: '⚡',
+            3: '🌈'
+        };
+
+        // ============ GAME STATE ============
+        let board = [];
+        let powerups = [];
+        let selectedTile = null;
+        let isProcessing = false;
+        let turnCount = 1;
+        let currentWave = 1;
+        let totalWaves = 3;
+        let comboCount = 0;
+        let cascadeLevel = 0;
+
+        let heroTeam = [];
+        let enemies = [];
+        let targetedEnemy = 0;
+
+        // ============ AUDIO SYSTEM ============
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(frequency, duration, type = 'sine', volume = 0.3) {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        const sounds = {
+            swap: () => {
+                playTone(400, 0.1, 'sine', 0.2);
+            },
+            
+            match3: (cascade = 0) => {
+                const pitch = Math.pow(1.1, cascade);
+                playTone(523.25 * pitch, 0.15, 'sine', 0.25);
+                setTimeout(() => playTone(659.25 * pitch, 0.15, 'sine', 0.25), 50);
+                setTimeout(() => playTone(783.99 * pitch, 0.2, 'sine', 0.25), 100);
+            },
+            
+            match4: (cascade = 0) => {
+                const pitch = Math.pow(1.1, cascade);
+                playTone(659.25 * pitch, 0.15, 'triangle', 0.3);
+                setTimeout(() => playTone(783.99 * pitch, 0.15, 'triangle', 0.3), 50);
+                setTimeout(() => playTone(987.77 * pitch, 0.15, 'triangle', 0.3), 100);
+                setTimeout(() => playTone(1046.50 * pitch, 0.25, 'triangle', 0.3), 150);
+            },
+            
+            match5: (cascade = 0) => {
+                const pitch = Math.pow(1.1, cascade);
+                playTone(523.25 * pitch, 0.1, 'square', 0.25);
+                setTimeout(() => playTone(659.25 * pitch, 0.1, 'square', 0.25), 60);
+                setTimeout(() => playTone(783.99 * pitch, 0.1, 'square', 0.25), 120);
+                setTimeout(() => playTone(1046.50 * pitch, 0.1, 'square', 0.25), 180);
+                setTimeout(() => playTone(1318.51 * pitch, 0.3, 'square', 0.3), 240);
+            },
+            
+            bomb: () => {
+                if (!audioContext) initAudio();
+                
+                const bassOsc = audioContext.createOscillator();
+                const bassGain = audioContext.createGain();
+                
+                bassOsc.type = 'sine';
+                bassOsc.frequency.setValueAtTime(80, audioContext.currentTime);
+                bassOsc.frequency.exponentialRampToValueAtTime(20, audioContext.currentTime + 0.3);
+                
+                bassGain.gain.setValueAtTime(0.6, audioContext.currentTime);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                bassOsc.connect(bassGain);
+                bassGain.connect(audioContext.destination);
+                
+                bassOsc.start(audioContext.currentTime);
+                bassOsc.stop(audioContext.currentTime + 0.3);
+                
+                // White noise burst
+                const bufferSize = audioContext.sampleRate * 0.4;
+                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+                }
+                
+                const noiseSource = audioContext.createBufferSource();
+                const noiseGain = audioContext.createGain();
+                
+                noiseSource.buffer = buffer;
+                noiseSource.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+                
+                noiseGain.gain.setValueAtTime(0.4, audioContext.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                
+                noiseSource.start();
+            },
+
+            damage: () => {
+                playTone(200, 0.1, 'sawtooth', 0.3);
+                setTimeout(() => playTone(150, 0.15, 'sawtooth', 0.25), 50);
+            },
+
+            heal: () => {
+                playTone(600, 0.1, 'sine', 0.2);
+                setTimeout(() => playTone(800, 0.1, 'sine', 0.2), 80);
+                setTimeout(() => playTone(1000, 0.15, 'sine', 0.25), 160);
+            },
+
+            ability: () => {
+                playTone(400, 0.1, 'square', 0.3);
+                setTimeout(() => playTone(600, 0.1, 'square', 0.3), 100);
+                setTimeout(() => playTone(800, 0.1, 'square', 0.3), 200);
+                setTimeout(() => playTone(1200, 0.3, 'square', 0.4), 300);
+            },
+
+            powerupCreated: () => {
+                playTone(800, 0.1, 'sine', 0.3);
+                setTimeout(() => playTone(1000, 0.1, 'sine', 0.3), 80);
+                setTimeout(() => playTone(1200, 0.15, 'sine', 0.35), 160);
+                setTimeout(() => playTone(1600, 0.2, 'triangle', 0.3), 240);
+            }
+        };
+
+        // ============ INITIALIZE ============
+        function initBattle() {
+            loadHeroTeam();
+            generateEnemyWave();
+            initBoard();
+            renderAll();
+        }
+
+        function loadHeroTeam() {
+            const saved = localStorage.getItem('heroGameState');
+            if (saved) {
+                const gameState = JSON.parse(saved);
+                const teamHeroes = gameState.attackTeam.filter(h => h) || [];
+                
+                if (teamHeroes.length > 0) {
+                    heroTeam = teamHeroes.map(h => ({
+                        ...h,
+                        currentHp: h.hp,
+                        currentMana: 0
+                    }));
+                } else if (gameState.heroes.length > 0) {
+                    heroTeam = gameState.heroes.slice(0, 5).map(h => ({
+                        ...h,
+                        currentHp: h.hp,
+                        currentMana: 0
+                    }));
+                }
+            }
+            
+            if (heroTeam.length === 0) {
+                heroTeam = [
+                    { name: 'Knight', element: 'fire', icon: '🛡️', atk: 400, def: 350, hp: 800, currentHp: 800, currentMana: 0, ability: 'Shield Bash', abilityDesc: 'Deals 180% damage', abilityIcon: '🛡️' },
+                    { name: 'Mermaid', element: 'water', icon: '🧜‍♀️', atk: 350, def: 300, hp: 700, currentHp: 700, currentMana: 0, ability: 'Tidal Wave', abilityDesc: 'Hits all enemies', abilityIcon: '🌊' },
+                    { name: 'Druid', element: 'nature', icon: '🌳', atk: 300, def: 350, hp: 750, currentHp: 750, currentMana: 0, ability: 'Regrowth', abilityDesc: 'Heals all allies', abilityIcon: '💚' },
+                    { name: 'Paladin', element: 'holy', icon: '⚜️', atk: 380, def: 380, hp: 850, currentHp: 850, currentMana: 0, ability: 'Holy Strike', abilityDesc: 'Extra vs Dark', abilityIcon: '✝️' },
+                    { name: 'Warlock', element: 'dark', icon: '🧛', atk: 420, def: 280, hp: 650, currentHp: 650, currentMana: 0, ability: 'Life Drain', abilityDesc: 'Steals HP', abilityIcon: '🩸' }
+                ];
+            }
+        }
+
+        function generateEnemyWave() {
+            const templates = [
+                { name: 'Goblin', icon: '👺', baseHp: 300, baseAtk: 50 },
+                { name: 'Orc', icon: '👹', baseHp: 500, baseAtk: 80 },
+                { name: 'Skeleton', icon: '💀', baseHp: 250, baseAtk: 60 },
+                { name: 'Troll', icon: '🧌', baseHp: 700, baseAtk: 100 },
+                { name: 'Dragon', icon: '🐉', baseHp: 1000, baseAtk: 150 }
+            ];
+
+            enemies = [];
+            const numEnemies = Math.min(3 + currentWave - 1, 5);
+            
+            for (let i = 0; i < numEnemies; i++) {
+                const t = templates[Math.min(currentWave - 1 + Math.floor(Math.random() * 2), templates.length - 1)];
+                enemies.push({
+                    name: t.name,
+                    icon: t.icon,
+                    maxHp: Math.floor(t.baseHp * (1 + currentWave * 0.3)),
+                    currentHp: Math.floor(t.baseHp * (1 + currentWave * 0.3)),
+                    atk: Math.floor(t.baseAtk * (1 + currentWave * 0.2))
+                });
+            }
+            targetedEnemy = 0;
+        }
+
+        // ============ BOARD ============
+        function initBoard() {
+            board = [];
+            powerups = [];
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                board[y] = [];
+                powerups[y] = [];
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    board[y][x] = getRandomTile(x, y);
+                    powerups[y][x] = POWERUP_TYPES.NONE;
+                }
+            }
+            while (findMatches().length > 0) {
+                for (let y = 0; y < BOARD_SIZE; y++) {
+                    for (let x = 0; x < BOARD_SIZE; x++) {
+                        if (isPartOfMatch(x, y)) {
+                            board[y][x] = getRandomTile(x, y);
+                        }
+                    }
+                }
+            }
+        }
+
+        function getRandomTile(x, y) {
+            let tile;
+            let attempts = 0;
+            do {
+                tile = Math.floor(Math.random() * TILE_TYPES);
+                attempts++;
+            } while (wouldCreateMatch(x, y, tile) && attempts < 50);
+            return tile;
+        }
+
+        function wouldCreateMatch(x, y, tile) {
+            if (x >= 2 && board[y][x-1] === tile && board[y][x-2] === tile) return true;
+            if (y >= 2 && board[y-1] && board[y-1][x] === tile && board[y-2] && board[y-2][x] === tile) return true;
+            return false;
+        }
+
+        function isPartOfMatch(x, y) {
+            return findMatches().some(m => m.tiles.some(t => t.x === x && t.y === y));
+        }
+
+        // ============ RENDERING ============
+        function renderAll() {
+            renderBoard();
+            renderHeroes();
+            renderEnemies();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.x = x;
+                    tile.dataset.y = y;
+                    tile.dataset.type = board[y][x];
+                    
+                    let content = `<span class="tile-icon">${ELEMENT_ICONS[board[y][x]] || ''}</span>`;
+                    
+                    if (powerups[y][x] !== POWERUP_TYPES.NONE) {
+                        tile.classList.add('powerup');
+                        if (powerups[y][x] === POWERUP_TYPES.BOMB) tile.classList.add('powerup-bomb');
+                        if (powerups[y][x] === POWERUP_TYPES.LIGHTNING) tile.classList.add('powerup-lightning');
+                        if (powerups[y][x] === POWERUP_TYPES.COLOR_BOMB) tile.classList.add('powerup-colorbomb');
+                        content += `<span class="powerup-icon">${POWERUP_ICONS[powerups[y][x]]}</span>`;
+                    }
+                    
+                    tile.innerHTML = content;
+                    
+                    if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
+                        tile.classList.add('selected');
+                    }
+                    
+                    if (board[y][x] === -1) {
+                        tile.style.visibility = 'hidden';
+                    }
+                    
+                    tile.onclick = () => handleTileClick(x, y);
+                    boardEl.appendChild(tile);
+                }
+            }
+        }
+
+        function renderHeroes() {
+            const row = document.getElementById('heroes-row');
+            row.innerHTML = '';
+
+            heroTeam.forEach((hero, i) => {
+                const slot = document.createElement('div');
+                slot.className = 'hero-slot';
+                slot.dataset.element = hero.element;
+                if (hero.currentHp <= 0) slot.classList.add('dead');
+                if (hero.currentMana >= MAX_MANA && hero.currentHp > 0) slot.classList.add('ready');
+                
+                const hpPct = Math.max(0, (hero.currentHp / hero.hp) * 100);
+                const manaPct = Math.min(100, (hero.currentMana / MAX_MANA) * 100);
+                
+                slot.innerHTML = `
+                    <div class="hero-icon">${hero.icon}</div>
+                    <div class="hero-mana-bar">
+                        <div class="hero-mana-fill ${manaPct >= 100 ? 'full' : ''}" style="width:${manaPct}%"></div>
+                    </div>
+                    <div class="hero-hp-bar">
+                        <div class="hero-hp-fill" style="width:${hpPct}%"></div>
+                    </div>
+                `;
+                
+                slot.onclick = () => activateAbility(i);
+                row.appendChild(slot);
+            });
+        }
+
+        function renderEnemies() {
+            const row = document.getElementById('enemies-row');
+            row.innerHTML = '';
+
+            enemies.forEach((enemy, i) => {
+                const el = document.createElement('div');
+                el.className = 'enemy';
+                if (enemy.currentHp <= 0) el.classList.add('dead');
+                if (i === targetedEnemy && enemy.currentHp > 0) el.classList.add('targeted');
+                
+                const hpPct = Math.max(0, (enemy.currentHp / enemy.maxHp) * 100);
+                
+                el.innerHTML = `
+                    <div class="enemy-icon">${enemy.icon}</div>
+                    <div class="enemy-name">${enemy.name}</div>
+                    <div class="enemy-hp-bar">
+                        <div class="enemy-hp-fill" style="width:${hpPct}%"></div>
+                    </div>
+                    <div class="enemy-hp-text">${Math.max(0, enemy.currentHp)}/${enemy.maxHp}</div>
+                `;
+                
+                el.onclick = () => selectTarget(i);
+                row.appendChild(el);
+            });
+            
+            document.getElementById('wave-num').textContent = currentWave;
+        }
+
+        // ============ TILE INTERACTION ============
+        function handleTileClick(x, y) {
+            if (isProcessing || board[y][x] === -1) return;
+            initAudio();
+
+            if (!selectedTile) {
+                selectedTile = { x, y };
+                renderBoard();
+            } else {
+                const dx = Math.abs(selectedTile.x - x);
+                const dy = Math.abs(selectedTile.y - y);
+                
+                if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                    trySwap(selectedTile.x, selectedTile.y, x, y);
+                } else {
+                    selectedTile = { x, y };
+                    renderBoard();
+                }
+            }
+        }
+
+        async function trySwap(x1, y1, x2, y2) {
+            isProcessing = true;
+            selectedTile = null;
+            document.getElementById('board').classList.add('processing');
+            
+            sounds.swap();
+
+            [board[y1][x1], board[y2][x2]] = [board[y2][x2], board[y1][x1]];
+            [powerups[y1][x1], powerups[y2][x2]] = [powerups[y2][x2], powerups[y1][x1]];
+            
+            await animateSwap(x1, y1, x2, y2);
+
+            const matches = findMatches();
+            
+            if (matches.length === 0) {
+                [board[y1][x1], board[y2][x2]] = [board[y2][x2], board[y1][x1]];
+                [powerups[y1][x1], powerups[y2][x2]] = [powerups[y2][x2], powerups[y1][x1]];
+                await animateSwap(x1, y1, x2, y2);
+                isProcessing = false;
+                document.getElementById('board').classList.remove('processing');
+                renderBoard();
+                return;
+            }
+
+            comboCount = 0;
+            cascadeLevel = 0;
+            await processMatches();
+            
+            await enemyTurn();
+            
+            turnCount++;
+            document.getElementById('turn-count').textContent = turnCount;
+            
+            isProcessing = false;
+            document.getElementById('board').classList.remove('processing');
+        }
+
+        async function animateSwap(x1, y1, x2, y2) {
+            renderBoard();
+            const tiles = document.querySelectorAll('.tile');
+            const tile1 = tiles[y1 * BOARD_SIZE + x1];
+            const tile2 = tiles[y2 * BOARD_SIZE + x2];
+            
+            if (tile1) tile1.classList.add('swapping');
+            if (tile2) tile2.classList.add('swapping');
+            
+            const dx = (x2 - x1) * 100;
+            const dy = (y2 - y1) * 100;
+            
+            if (tile1) tile1.style.transform = `translate(${dx}%, ${dy}%)`;
+            if (tile2) tile2.style.transform = `translate(${-dx}%, ${-dy}%)`;
+            
+            await sleep(400);
+            renderBoard();
+        }
+
+        // ============ MATCH DETECTION ============
+        // Find L-shape or T-shape intersection between matches
+        function findLShapeIntersection(matches) {
+            const horizontalMatches = matches.filter(m => m.direction === 'horizontal');
+            const verticalMatches = matches.filter(m => m.direction === 'vertical');
+            
+            for (const hMatch of horizontalMatches) {
+                for (const vMatch of verticalMatches) {
+                    // Must be same tile type
+                    if (hMatch.type !== vMatch.type) continue;
+                    
+                    // Find if they share a tile
+                    for (const hTile of hMatch.tiles) {
+                        for (const vTile of vMatch.tiles) {
+                            if (hTile.x === vTile.x && hTile.y === vTile.y) {
+                                return { x: hTile.x, y: hTile.y };
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function findMatches() {
+            const matches = [];
+
+            // Horizontal
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE - 2; x++) {
+                    if (board[y][x] >= 0 && board[y][x] === board[y][x+1] && board[y][x] === board[y][x+2]) {
+                        let match = { type: board[y][x], tiles: [], direction: 'horizontal' };
+                        let endX = x;
+                        while (endX < BOARD_SIZE && board[y][endX] === board[y][x]) {
+                            match.tiles.push({ x: endX, y });
+                            endX++;
+                        }
+                        matches.push(match);
+                        x = endX - 1;
+                    }
+                }
+            }
+
+            // Vertical
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                for (let y = 0; y < BOARD_SIZE - 2; y++) {
+                    if (board[y][x] >= 0 && board[y][x] === board[y+1][x] && board[y][x] === board[y+2][x]) {
+                        let match = { type: board[y][x], tiles: [], direction: 'vertical' };
+                        let endY = y;
+                        while (endY < BOARD_SIZE && board[endY][x] === board[y][x]) {
+                            match.tiles.push({ x, y: endY });
+                            endY++;
+                        }
+                        matches.push(match);
+                        y = endY - 1;
+                    }
+                }
+            }
+
+            return matches;
+        }
+
+        // ============ MATCH PROCESSING ============
+        async function processMatches() {
+            let matches = findMatches();
+            
+            while (matches.length > 0) {
+                comboCount++;
+                cascadeLevel++;
+                showCombo(comboCount);
+                
+                let totalDamage = 0;
+                const elementCounts = {};
+                ELEMENTS.forEach(e => elementCounts[e] = 0);
+                const powerupsToActivate = [];
+                const newPowerupPositions = new Set(); // Track newly created powerups
+                
+                // First pass: Check for EXISTING powerups to activate
+                for (const match of matches) {
+                    for (const tile of match.tiles) {
+                        if (powerups[tile.y][tile.x] !== POWERUP_TYPES.NONE) {
+                            powerupsToActivate.push({ x: tile.x, y: tile.y, type: powerups[tile.y][tile.x], tileType: match.type });
+                        }
+                    }
+                }
+                
+                // Second pass: Process matches and create NEW powerups
+                for (const match of matches) {
+                    const len = match.tiles.length;
+                    const element = ELEMENTS[match.type];
+                    elementCounts[element] += len;
+                    
+                    // Calculate damage
+                    const matchingHeroes = heroTeam.filter(h => h.element === element && h.currentHp > 0);
+                    const avgAtk = matchingHeroes.length > 0 
+                        ? matchingHeroes.reduce((sum, h) => sum + h.atk, 0) / matchingHeroes.length
+                        : 100;
+                    totalDamage += Math.floor(avgAtk * len * 0.5 * (1 + comboCount * 0.15));
+                    
+                    // Sound based on match length
+                    if (len >= 5) {
+                        sounds.match5(cascadeLevel);
+                    } else if (len === 4) {
+                        sounds.match4(cascadeLevel);
+                    } else {
+                        sounds.match3(cascadeLevel);
+                    }
+                    
+                    // Create power-up for match of 4+ (only if not already activating a powerup here)
+                    if (len === 4) {
+                        const midTile = match.tiles[1];
+                        const key = `${midTile.x},${midTile.y}`;
+                        if (!powerupsToActivate.some(p => p.x === midTile.x && p.y === midTile.y)) {
+                            powerups[midTile.y][midTile.x] = POWERUP_TYPES.BOMB;
+                            newPowerupPositions.add(key);
+                        }
+                    } else if (len >= 5) {
+                        const midTile = match.tiles[Math.floor(len/2)];
+                        const key = `${midTile.x},${midTile.y}`;
+                        if (!powerupsToActivate.some(p => p.x === midTile.x && p.y === midTile.y)) {
+                            powerups[midTile.y][midTile.x] = POWERUP_TYPES.COLOR_BOMB;
+                            newPowerupPositions.add(key);
+                        }
+                    }
+                }
+                
+                // Check for L-shape or T-shape matches (creates Lightning)
+                const lShapePosition = findLShapeIntersection(matches);
+                if (lShapePosition) {
+                    const key = `${lShapePosition.x},${lShapePosition.y}`;
+                    if (!powerupsToActivate.some(p => p.x === lShapePosition.x && p.y === lShapePosition.y)) {
+                        powerups[lShapePosition.y][lShapePosition.x] = POWERUP_TYPES.LIGHTNING;
+                        newPowerupPositions.add(key);
+                    }
+                }
+                
+                // Play powerup creation sound if any were created
+                if (newPowerupPositions.size > 0) {
+                    sounds.powerupCreated();
+                }
+                
+                // Charge hero mana
+                for (const hero of heroTeam) {
+                    if (hero.currentHp > 0) {
+                        const count = elementCounts[hero.element] || 0;
+                        if (count > 0) {
+                            hero.currentMana = Math.min(MAX_MANA, hero.currentMana + count * MANA_PER_TILE);
+                        }
+                    }
+                }
+                
+                // Animate matches - consistent smooth timing
+                await animateMatches(matches, 550, newPowerupPositions);
+                
+                // Deal damage
+                dealDamageVisual(totalDamage);
+                
+                // Activate powerups
+                if (powerupsToActivate.length > 0) {
+                    sounds.bomb();
+                    for (const pu of powerupsToActivate) {
+                        activatePowerupInstant(pu.x, pu.y, pu.type, pu.tileType);
+                    }
+                }
+                
+                // Drop and refill - smooth timing
+                await dropAndRefill(450);
+                
+                matches = findMatches();
+            }
+            
+            document.getElementById('combo-display').textContent = '';
+            
+            // Check if wave is complete after all cascades
+            await checkWaveComplete();
+        }
+
+        async function animateMatches(matches, duration = 550, newPowerupPositions = new Set()) {
+            renderBoard();
+            
+            for (const match of matches) {
+                for (const tile of match.tiles) {
+                    const key = `${tile.x},${tile.y}`;
+                    // Don't animate tiles that will become powerups
+                    if (!newPowerupPositions.has(key)) {
+                        const el = document.querySelector(`.tile[data-x="${tile.x}"][data-y="${tile.y}"]`);
+                        if (el) el.classList.add('matching');
+                    }
+                }
+            }
+            
+            await sleep(duration);
+            
+            // Clear tiles that aren't becoming powerups
+            for (const match of matches) {
+                for (const tile of match.tiles) {
+                    const key = `${tile.x},${tile.y}`;
+                    // Only clear if: no existing powerup AND not a new powerup position
+                    if (powerups[tile.y][tile.x] === POWERUP_TYPES.NONE && !newPowerupPositions.has(key)) {
+                        board[tile.y][tile.x] = -1;
+                    }
+                }
+            }
+            
+            renderBoard(); // Re-render to show the new powerup tiles
+            renderHeroes();
+        }
+
+        function activatePowerupInstant(x, y, type, tileType) {
+            const tilesToClear = [];
+            
+            if (type === POWERUP_TYPES.BOMB) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                            tilesToClear.push({ x: nx, y: ny });
+                        }
+                    }
+                }
+            } else if (type === POWERUP_TYPES.LIGHTNING) {
+                for (let i = 0; i < BOARD_SIZE; i++) {
+                    tilesToClear.push({ x: i, y });
+                    tilesToClear.push({ x, y: i });
+                }
+            } else if (type === POWERUP_TYPES.COLOR_BOMB) {
+                for (let ty = 0; ty < BOARD_SIZE; ty++) {
+                    for (let tx = 0; tx < BOARD_SIZE; tx++) {
+                        if (board[ty][tx] === tileType) {
+                            tilesToClear.push({ x: tx, y: ty });
+                        }
+                    }
+                }
+            }
+            
+            const extraDamage = tilesToClear.length * 30;
+            
+            for (const tile of tilesToClear) {
+                board[tile.y][tile.x] = -1;
+                powerups[tile.y][tile.x] = POWERUP_TYPES.NONE;
+            }
+            
+            dealDamageVisual(extraDamage);
+        }
+
+        async function dropAndRefill(duration = 300) {
+            // Drop existing tiles
+            for (let x = 0; x < BOARD_SIZE; x++) {
+                let emptyY = BOARD_SIZE - 1;
+                for (let y = BOARD_SIZE - 1; y >= 0; y--) {
+                    if (board[y][x] !== -1) {
+                        if (y !== emptyY) {
+                            board[emptyY][x] = board[y][x];
+                            powerups[emptyY][x] = powerups[y][x];
+                            board[y][x] = -1;
+                            powerups[y][x] = POWERUP_TYPES.NONE;
+                        }
+                        emptyY--;
+                    }
+                }
+                
+                // Fill empty with new tiles
+                for (let y = emptyY; y >= 0; y--) {
+                    board[y][x] = Math.floor(Math.random() * TILE_TYPES);
+                    powerups[y][x] = POWERUP_TYPES.NONE;
+                }
+            }
+            
+            // Animate drop
+            renderBoard();
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach((tile, i) => {
+                const y = Math.floor(i / BOARD_SIZE);
+                if (y < 3) {
+                    tile.classList.add('dropping');
+                }
+            });
+            
+            await sleep(duration);
+            renderBoard();
+        }
+
+        // ============ DAMAGE SYSTEM ============
+        // Non-blocking damage for cascades
+        function dealDamageVisual(damage) {
+            while (targetedEnemy < enemies.length && enemies[targetedEnemy].currentHp <= 0) {
+                targetedEnemy++;
+            }
+            
+            if (targetedEnemy >= enemies.length) return;
+            
+            const enemy = enemies[targetedEnemy];
+            enemy.currentHp -= damage;
+            
+            showDamageNumber(targetedEnemy, damage, false);
+            
+            const enemyEl = document.querySelectorAll('.enemy')[targetedEnemy];
+            if (enemyEl) {
+                enemyEl.classList.add('hit');
+                setTimeout(() => enemyEl.classList.remove('hit'), 300);
+            }
+            
+            renderEnemies();
+            
+            if (enemy.currentHp <= 0) {
+                enemy.currentHp = 0;
+                renderEnemies();
+            }
+        }
+
+        // Blocking damage for abilities
+        async function dealDamage(damage) {
+            while (targetedEnemy < enemies.length && enemies[targetedEnemy].currentHp <= 0) {
+                targetedEnemy++;
+            }
+            
+            if (targetedEnemy >= enemies.length) {
+                await checkWaveComplete();
+                return;
+            }
+            
+            const enemy = enemies[targetedEnemy];
+            enemy.currentHp -= damage;
+            
+            sounds.damage();
+            showDamageNumber(targetedEnemy, damage, false);
+            
+            const enemyEl = document.querySelectorAll('.enemy')[targetedEnemy];
+            if (enemyEl) {
+                enemyEl.classList.add('hit');
+                setTimeout(() => enemyEl.classList.remove('hit'), 300);
+            }
+            
+            renderEnemies();
+            await sleep(200);
+            
+            if (enemy.currentHp <= 0) {
+                enemy.currentHp = 0;
+                renderEnemies();
+                await checkWaveComplete();
+            }
+        }
+
+        function showDamageNumber(enemyIndex, amount, isHeal) {
+            const row = document.getElementById('enemies-row');
+            const enemyEl = row.children[enemyIndex];
+            if (!enemyEl) return;
+            
+            const dmg = document.createElement('div');
+            dmg.className = `damage-number ${isHeal ? 'heal' : ''}`;
+            dmg.textContent = isHeal ? `+${amount}` : `-${amount}`;
+            dmg.style.left = '50%';
+            dmg.style.top = '0';
+            enemyEl.appendChild(dmg);
+            
+            setTimeout(() => dmg.remove(), 1000);
+        }
+
+        function showCombo(count) {
+            const display = document.getElementById('combo-display');
+            if (count > 1) {
+                display.textContent = `${count}x COMBO!`;
+            }
+        }
+
+        // ============ ENEMY TURN ============
+        async function enemyTurn() {
+            await sleep(300); // Pause before enemy turn
+            
+            for (const enemy of enemies) {
+                if (enemy.currentHp <= 0) continue;
+                
+                const livingHeroes = heroTeam.filter(h => h.currentHp > 0);
+                if (livingHeroes.length === 0) {
+                    showBattleResult(false);
+                    return;
+                }
+                
+                const target = livingHeroes[Math.floor(Math.random() * livingHeroes.length)];
+                const damage = Math.max(1, enemy.atk - Math.floor(target.def * 0.3));
+                target.currentHp = Math.max(0, target.currentHp - damage);
+                
+                sounds.damage();
+                renderHeroes();
+                await sleep(500); // Smooth pause between enemy attacks
+            }
+            
+            if (heroTeam.every(h => h.currentHp <= 0)) {
+                showBattleResult(false);
+            }
+        }
+
+        // ============ ABILITIES ============
+        async function activateAbility(index) {
+            const hero = heroTeam[index];
+            if (!hero || hero.currentHp <= 0 || hero.currentMana < MAX_MANA || isProcessing) return;
+            
+            isProcessing = true;
+            hero.currentMana = 0;
+            
+            sounds.ability();
+            
+            const overlay = document.getElementById('ability-overlay');
+            document.getElementById('ability-hero-icon').textContent = hero.icon;
+            document.getElementById('ability-name').textContent = hero.ability;
+            document.getElementById('ability-desc').textContent = hero.abilityDesc;
+            overlay.classList.add('active');
+            
+            await sleep(1000);
+            overlay.classList.remove('active');
+            
+            switch (hero.element) {
+                case 'fire':
+                    await dealDamage(Math.floor(hero.atk * 2.5));
+                    break;
+                case 'water':
+                    const waterDmg = Math.floor(hero.atk * 1.5);
+                    for (let i = 0; i < enemies.length; i++) {
+                        if (enemies[i].currentHp > 0) {
+                            enemies[i].currentHp -= waterDmg;
+                            showDamageNumber(i, waterDmg, false);
+                        }
+                    }
+                    renderEnemies();
+                    await checkWaveComplete();
+                    break;
+                case 'nature':
+                    sounds.heal();
+                    const heal = Math.floor(hero.hp * 0.3);
+                    for (const h of heroTeam) {
+                        if (h.currentHp > 0) {
+                            h.currentHp = Math.min(h.hp, h.currentHp + heal);
+                        }
+                    }
+                    renderHeroes();
+                    break;
+                case 'holy':
+                    await dealDamage(Math.floor(hero.atk * 2));
+                    for (const h of heroTeam) {
+                        if (h.currentHp > 0) h.currentMana = Math.min(MAX_MANA, h.currentMana + 20);
+                    }
+                    renderHeroes();
+                    break;
+                case 'dark':
+                    const darkDmg = Math.floor(hero.atk * 2);
+                    await dealDamage(darkDmg);
+                    hero.currentHp = Math.min(hero.hp, hero.currentHp + Math.floor(darkDmg * 0.5));
+                    renderHeroes();
+                    break;
+            }
+            
+            isProcessing = false;
+        }
+
+        function selectTarget(index) {
+            if (enemies[index].currentHp > 0) {
+                targetedEnemy = index;
+                renderEnemies();
+            }
+        }
+
+        // ============ WAVE & BATTLE ============
+        async function checkWaveComplete() {
+            if (enemies.every(e => e.currentHp <= 0)) {
+                if (currentWave >= totalWaves) {
+                    await sleep(500);
+                    showBattleResult(true);
+                } else {
+                    currentWave++;
+                    await sleep(500);
+                    generateEnemyWave();
+                    renderEnemies();
+                }
+            }
+        }
+
+        function showBattleResult(victory) {
+            const result = document.getElementById('battle-result');
+            const title = document.getElementById('result-title');
+            const rewards = document.getElementById('result-rewards');
+            
+            if (victory) {
+                title.textContent = 'VICTORY!';
+                title.className = 'result-title victory';
+                rewards.innerHTML = `
+                    <div class="reward-item">🪙 +${currentWave * 200} Gold</div>
+                    <div class="reward-item">⭐ +${currentWave * 30} XP</div>
+                    <div class="reward-item">💎 +${currentWave * 5} Gems</div>
+                `;
+            } else {
+                title.textContent = 'DEFEAT';
+                title.className = 'result-title defeat';
+                rewards.innerHTML = `
+                    <div class="reward-item">Better luck next time!</div>
+                    <div class="reward-item">🪙 +50 Gold</div>
+                `;
+            }
+            
+            result.classList.add('active');
+        }
+
+        function endBattle() {
+            window.location.href = 'home-base.html';
+        }
+
+        function retreatBattle() {
+            if (confirm('Retreat from battle?')) {
+                window.location.href = 'home-base.html';
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // START
+        initBattle();
+    </script>
+</body>
+</html>

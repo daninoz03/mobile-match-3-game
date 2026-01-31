@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Heroes - Kingdom Warriors</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(180deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #f0e6d3;
+            overflow-x: hidden;
+        }
+
+        /* ============ HEADER ============ */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(20,10,30,0.95) 0%, rgba(20,10,30,0.8) 100%);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 1000;
+            border-bottom: 2px solid #4a3060;
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #4a3060, #2a1a40);
+            border: 2px solid #6a4080;
+            color: #f0e6d3;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #5a4070, #3a2a50);
+            transform: scale(1.05);
+        }
+
+        .header-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .resources {
+            display: flex;
+            gap: 15px;
+        }
+
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+        }
+
+        .resource-icon {
+            font-size: 1.2em;
+        }
+
+        /* ============ TAB NAVIGATION ============ */
+        .tabs {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: rgba(20,10,30,0.9);
+            border-bottom: 2px solid #3a2050;
+            z-index: 999;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            font-size: 0.9em;
+        }
+
+        .tab:hover {
+            background: rgba(100,60,140,0.3);
+        }
+
+        .tab.active {
+            background: rgba(100,60,140,0.4);
+            border-bottom-color: #ffd700;
+            color: #ffd700;
+        }
+
+        /* ============ MAIN CONTENT ============ */
+        .content {
+            margin-top: 110px;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ============ TEAM SECTION ============ */
+        .team-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .team-slots {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .team-slot {
+            width: 70px;
+            height: 90px;
+            background: linear-gradient(180deg, rgba(60,40,80,0.6) 0%, rgba(40,20,60,0.8) 100%);
+            border: 2px solid #5a4070;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .team-slot:hover {
+            transform: scale(1.05);
+            border-color: #ffd700;
+        }
+
+        .team-slot.empty {
+            border-style: dashed;
+            opacity: 0.6;
+        }
+
+        .team-slot.empty::after {
+            content: '+';
+            font-size: 2em;
+            color: #8a7090;
+        }
+
+        .team-slot .hero-portrait {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-slot .hero-stars {
+            font-size: 0.6em;
+            margin-top: 3px;
+        }
+
+        /* ============ HERO ROSTER GRID ============ */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 2px solid #5a4070;
+            background: rgba(60,40,80,0.4);
+            color: #f0e6d3;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(100,60,140,0.6);
+            border-color: #ffd700;
+        }
+
+        .filter-btn.element-fire { border-color: #ff4444; }
+        .filter-btn.element-fire.active { background: rgba(255,68,68,0.4); }
+        .filter-btn.element-water { border-color: #4488ff; }
+        .filter-btn.element-water.active { background: rgba(68,136,255,0.4); }
+        .filter-btn.element-nature { border-color: #44cc44; }
+        .filter-btn.element-nature.active { background: rgba(68,204,68,0.4); }
+        .filter-btn.element-holy { border-color: #ffdd44; }
+        .filter-btn.element-holy.active { background: rgba(255,221,68,0.4); }
+        .filter-btn.element-dark { border-color: #aa44ff; }
+        .filter-btn.element-dark.active { background: rgba(170,68,255,0.4); }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .hero-card {
+            background: linear-gradient(180deg, rgba(60,40,80,0.7) 0%, rgba(40,20,60,0.9) 100%);
+            border: 2px solid #5a4070;
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .hero-card:hover {
+            transform: translateY(-5px);
+            border-color: #ffd700;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .hero-card.selected {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0,255,136,0.4);
+        }
+
+        /* Element-based borders */
+        .hero-card.element-fire { border-color: #ff4444; }
+        .hero-card.element-water { border-color: #4488ff; }
+        .hero-card.element-nature { border-color: #44cc44; }
+        .hero-card.element-holy { border-color: #ffdd44; }
+        .hero-card.element-dark { border-color: #aa44ff; }
+
+        .hero-portrait-large {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            margin-bottom: 8px;
+        }
+
+        .hero-portrait-large.element-fire { background: linear-gradient(135deg, #8b0000, #ff4444); }
+        .hero-portrait-large.element-water { background: linear-gradient(135deg, #000080, #4488ff); }
+        .hero-portrait-large.element-nature { background: linear-gradient(135deg, #006400, #44cc44); }
+        .hero-portrait-large.element-holy { background: linear-gradient(135deg, #8b8000, #ffdd44); }
+        .hero-portrait-large.element-dark { background: linear-gradient(135deg, #4b0082, #aa44ff); }
+
+        .hero-name {
+            font-size: 0.85em;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hero-stars {
+            text-align: center;
+            color: #ffd700;
+            font-size: 0.75em;
+            margin: 3px 0;
+        }
+
+        .hero-level {
+            text-align: center;
+            font-size: 0.75em;
+            color: #aaa;
+        }
+
+        .hero-power {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            color: #ffd700;
+        }
+
+        /* ============ SUMMON TAB ============ */
+        .summon-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .summon-portal {
+            background: linear-gradient(180deg, rgba(60,40,80,0.7) 0%, rgba(40,20,60,0.9) 100%);
+            border: 3px solid #5a4070;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .summon-portal:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .summon-portal.basic { border-color: #888; }
+        .summon-portal.epic { border-color: #aa44ff; }
+        .summon-portal.legendary { border-color: #ffd700; }
+
+        .portal-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            animation: portalGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes portalGlow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(255,215,0,0.5)); }
+            50% { filter: drop-shadow(0 0 25px rgba(255,215,0,0.8)); }
+        }
+
+        .portal-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .portal-odds {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+
+        .portal-odds span {
+            display: block;
+            margin: 3px 0;
+        }
+
+        .summon-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 5px;
+        }
+
+        .summon-btn.single {
+            background: linear-gradient(135deg, #4a3060, #6a4080);
+            color: #f0e6d3;
+        }
+
+        .summon-btn.multi {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a0a2e;
+        }
+
+        .summon-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .summon-cost {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 5px;
+            font-size: 0.85em;
+        }
+
+        /* ============ HERO DETAIL MODAL ============ */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-bg.active {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(180deg, #2a1a40 0%, #1a0a2e 100%);
+            border: 3px solid #5a4070;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #f0e6d3;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .hero-detail-portrait {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+
+        .hero-detail-name {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .hero-detail-stars {
+            text-align: center;
+            font-size: 1.2em;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .hero-detail-element {
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+
+        .stat-bars {
+            margin: 20px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            width: 60px;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .stat-bar-bg {
+            flex: 1;
+            height: 12px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .stat-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.3s;
+        }
+
+        .stat-bar.atk { background: linear-gradient(90deg, #ff4444, #ff8888); }
+        .stat-bar.def { background: linear-gradient(90deg, #4488ff, #88bbff); }
+        .stat-bar.hp { background: linear-gradient(90deg, #44cc44, #88ff88); }
+
+        .stat-value {
+            width: 50px;
+            text-align: right;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .special-ability {
+            background: rgba(60,40,80,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .ability-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ability-icon {
+            font-size: 1.5em;
+        }
+
+        .ability-name {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .ability-mana {
+            margin-left: auto;
+            font-size: 0.8em;
+            color: #88bbff;
+        }
+
+        .ability-desc {
+            font-size: 0.9em;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #1a0a2e;
+        }
+
+        .modal-btn.secondary {
+            background: linear-gradient(135deg, #4a3060, #6a4080);
+            color: #f0e6d3;
+        }
+
+        .modal-btn:hover {
+            transform: scale(1.02);
+        }
+
+        /* ============ SUMMON ANIMATION ============ */
+        .summon-result {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .summon-result.active {
+            display: flex;
+        }
+
+        .summoned-hero {
+            animation: heroReveal 1s ease-out;
+        }
+
+        @keyframes heroReveal {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .summoned-portrait {
+            width: 150px;
+            height: 150px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5em;
+            margin-bottom: 20px;
+            box-shadow: 0 0 50px rgba(255,215,0,0.5);
+        }
+
+        .summoned-info {
+            text-align: center;
+        }
+
+        .summoned-stars {
+            font-size: 2em;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .summoned-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .summoned-element {
+            font-size: 1.2em;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .continue-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1a0a2e;
+            cursor: pointer;
+        }
+
+        /* ============ BOTTOM NAV ============ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background: linear-gradient(180deg, rgba(20,10,30,0.95) 0%, rgba(10,5,20,1) 100%);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 2px solid #4a3060;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: #8a7090;
+            text-decoration: none;
+            font-size: 0.75em;
+            transition: all 0.2s;
+            padding: 5px 15px;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: #ffd700;
+        }
+
+        .nav-btn .icon {
+            font-size: 1.8em;
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 480px) {
+            .hero-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .team-slot {
+                width: 60px;
+                height: 80px;
+            }
+
+            .filter-btn {
+                padding: 6px 10px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <button class="back-btn" onclick="location.href='home-base.html'">← Base</button>
+        <div class="header-title">⚔️ Heroes</div>
+        <div class="resources">
+            <div class="resource">
+                <span class="resource-icon">💎</span>
+                <span id="gems">150</span>
+            </div>
+            <div class="resource">
+                <span class="resource-icon">🎫</span>
+                <span id="tickets">3</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('roster')">📋 Roster</div>
+        <div class="tab" onclick="showTab('team')">🛡️ Team</div>
+        <div class="tab" onclick="showTab('summon')">✨ Summon</div>
+        <div class="tab" onclick="showTab('level')">⬆️ Level Up</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- ROSTER TAB -->
+        <div class="tab-content active" id="roster-tab">
+            <div class="section-title">🏰 Hero Roster <span style="font-size:0.7em;color:#888">(<span id="hero-count">0</span>/50)</span></div>
+            
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterHeroes('all')">All</button>
+                <button class="filter-btn element-fire" onclick="filterHeroes('fire')">🔥</button>
+                <button class="filter-btn element-water" onclick="filterHeroes('water')">💧</button>
+                <button class="filter-btn element-nature" onclick="filterHeroes('nature')">🌿</button>
+                <button class="filter-btn element-holy" onclick="filterHeroes('holy')">☀️</button>
+                <button class="filter-btn element-dark" onclick="filterHeroes('dark')">🌙</button>
+            </div>
+
+            <div class="hero-grid" id="hero-grid">
+                <!-- Heroes populated by JS -->
+            </div>
+        </div>
+
+        <!-- TEAM TAB -->
+        <div class="tab-content" id="team-tab">
+            <div class="section-title">⚔️ Defense Team</div>
+            <div class="team-slots" id="defense-team">
+                <div class="team-slot empty" data-slot="0" onclick="selectTeamSlot(0)"></div>
+                <div class="team-slot empty" data-slot="1" onclick="selectTeamSlot(1)"></div>
+                <div class="team-slot empty" data-slot="2" onclick="selectTeamSlot(2)"></div>
+                <div class="team-slot empty" data-slot="3" onclick="selectTeamSlot(3)"></div>
+                <div class="team-slot empty" data-slot="4" onclick="selectTeamSlot(4)"></div>
+            </div>
+
+            <div class="section-title" style="margin-top:25px">🗡️ Attack Teams</div>
+            <div style="font-size:0.9em;color:#888;margin-bottom:15px">Select heroes before battle</div>
+            
+            <div class="team-slots" id="attack-team">
+                <div class="team-slot empty" data-slot="5" onclick="selectTeamSlot(5)"></div>
+                <div class="team-slot empty" data-slot="6" onclick="selectTeamSlot(6)"></div>
+                <div class="team-slot empty" data-slot="7" onclick="selectTeamSlot(7)"></div>
+                <div class="team-slot empty" data-slot="8" onclick="selectTeamSlot(8)"></div>
+                <div class="team-slot empty" data-slot="9" onclick="selectTeamSlot(9)"></div>
+            </div>
+
+            <div style="text-align:center;margin-top:25px">
+                <div style="font-size:1.1em;color:#ffd700">Team Power: <span id="team-power">0</span></div>
+            </div>
+        </div>
+
+        <!-- SUMMON TAB -->
+        <div class="tab-content" id="summon-tab">
+            <div class="section-title">✨ Summon Heroes</div>
+            
+            <div class="summon-options">
+                <!-- Basic Summon -->
+                <div class="summon-portal basic">
+                    <div class="portal-icon">🌀</div>
+                    <div class="portal-title">Basic Summon</div>
+                    <div class="portal-odds">
+                        <span>⭐ 1★: 50%</span>
+                        <span>⭐⭐ 2★: 35%</span>
+                        <span>⭐⭐⭐ 3★: 15%</span>
+                    </div>
+                    <button class="summon-btn single" onclick="summonHero('basic', 1)">Summon x1</button>
+                    <div class="summon-cost">🎫 1 Ticket</div>
+                    <button class="summon-btn multi" onclick="summonHero('basic', 10)">Summon x10</button>
+                    <div class="summon-cost">🎫 10 Tickets</div>
+                </div>
+
+                <!-- Epic Summon -->
+                <div class="summon-portal epic">
+                    <div class="portal-icon">🌟</div>
+                    <div class="portal-title">Epic Summon</div>
+                    <div class="portal-odds">
+                        <span>⭐⭐ 2★: 40%</span>
+                        <span>⭐⭐⭐ 3★: 40%</span>
+                        <span>⭐⭐⭐⭐ 4★: 20%</span>
+                    </div>
+                    <button class="summon-btn single" onclick="summonHero('epic', 1)">Summon x1</button>
+                    <div class="summon-cost">💎 100 Gems</div>
+                    <button class="summon-btn multi" onclick="summonHero('epic', 10)">Summon x10</button>
+                    <div class="summon-cost">💎 900 Gems (10% off)</div>
+                </div>
+
+                <!-- Legendary Summon -->
+                <div class="summon-portal legendary">
+                    <div class="portal-icon">👑</div>
+                    <div class="portal-title">Legendary Summon</div>
+                    <div class="portal-odds">
+                        <span>⭐⭐⭐ 3★: 50%</span>
+                        <span>⭐⭐⭐⭐ 4★: 40%</span>
+                        <span>⭐⭐⭐⭐⭐ 5★: 10%</span>
+                    </div>
+                    <button class="summon-btn single" onclick="summonHero('legendary', 1)">Summon x1</button>
+                    <div class="summon-cost">💎 300 Gems</div>
+                    <button class="summon-btn multi" onclick="summonHero('legendary', 10)">Summon x10</button>
+                    <div class="summon-cost">💎 2700 Gems (10% off)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL UP TAB -->
+        <div class="tab-content" id="level-tab">
+            <div class="section-title">⬆️ Level Up Heroes</div>
+            <div style="text-align:center;color:#888;padding:40px">
+                <div style="font-size:3em;margin-bottom:15px">🔮</div>
+                <p>Select a hero from your roster to level up!</p>
+                <p style="margin-top:10px;font-size:0.9em">Use duplicate heroes or training materials to gain XP.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Detail Modal -->
+    <div class="modal-bg" id="hero-modal" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <span style="font-size:1.2em;font-weight:bold">Hero Details</span>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <div class="hero-detail-portrait element-fire" id="modal-portrait">⚔️</div>
+            <div class="hero-detail-name" id="modal-name">Hero Name</div>
+            <div class="hero-detail-stars" id="modal-stars">⭐⭐⭐</div>
+            <div class="hero-detail-element" id="modal-element">🔥 Fire Element</div>
+
+            <div class="stat-bars">
+                <div class="stat-row">
+                    <span class="stat-label">ATK</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar atk" id="modal-atk-bar" style="width:60%"></div>
+                    </div>
+                    <span class="stat-value" id="modal-atk">600</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">DEF</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar def" id="modal-def-bar" style="width:50%"></div>
+                    </div>
+                    <span class="stat-value" id="modal-def">500</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">HP</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar hp" id="modal-hp-bar" style="width:70%"></div>
+                    </div>
+                    <span class="stat-value" id="modal-hp">1400</span>
+                </div>
+            </div>
+
+            <div class="special-ability">
+                <div class="ability-header">
+                    <span class="ability-icon" id="modal-ability-icon">💥</span>
+                    <span class="ability-name" id="modal-ability-name">Flame Strike</span>
+                    <span class="ability-mana" id="modal-mana">Average</span>
+                </div>
+                <div class="ability-desc" id="modal-ability-desc">
+                    Deals 300% damage to target and nearby enemies. Burns target for 3 turns.
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeModal()">Close</button>
+                <button class="modal-btn primary" onclick="addToTeam()">Add to Team</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summon Result Screen -->
+    <div class="summon-result" id="summon-result">
+        <div class="summoned-hero">
+            <div class="summoned-portrait element-fire" id="summoned-portrait">⚔️</div>
+            <div class="summoned-info">
+                <div class="summoned-stars" id="summoned-stars">⭐⭐⭐</div>
+                <div class="summoned-name" id="summoned-name">Hero Name</div>
+                <div class="summoned-element" id="summoned-element">🔥 Fire Element</div>
+            </div>
+        </div>
+        <button class="continue-btn" onclick="closeSummonResult()">Continue</button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="home-base.html" class="nav-btn">
+            <span class="icon">🏰</span>
+            <span>Base</span>
+        </a>
+        <a href="heroes.html" class="nav-btn active">
+            <span class="icon">⚔️</span>
+            <span>Heroes</span>
+        </a>
+        <a href="battle.html" class="nav-btn">
+            <span class="icon">🎮</span>
+            <span>Battle</span>
+        </a>
+    </nav>
+
+    <script>
+        // ============ HERO DATA MODEL ============
+        const ELEMENTS = {
+            fire: { name: 'Fire', icon: '🔥', color: '#ff4444' },
+            water: { name: 'Water', icon: '💧', color: '#4488ff' },
+            nature: { name: 'Nature', icon: '🌿', color: '#44cc44' },
+            holy: { name: 'Holy', icon: '☀️', color: '#ffdd44' },
+            dark: { name: 'Dark', icon: '🌙', color: '#aa44ff' }
+        };
+
+        const MANA_SPEEDS = ['Very Fast', 'Fast', 'Average', 'Slow', 'Very Slow'];
+
+        // Hero templates by rarity
+        const HERO_TEMPLATES = {
+            // 1-Star Heroes
+            1: [
+                { name: 'Villager', element: 'fire', icon: '👨‍🌾', ability: 'Basic Strike', abilityDesc: 'Deals 100% damage to one enemy.', abilityIcon: '👊' },
+                { name: 'Peasant', element: 'water', icon: '🧑‍🌾', ability: 'Splash', abilityDesc: 'Deals 80% damage to all enemies.', abilityIcon: '💦' },
+                { name: 'Gatherer', element: 'nature', icon: '🧝', ability: 'Heal', abilityDesc: 'Heals one ally for 20% HP.', abilityIcon: '💚' },
+                { name: 'Acolyte', element: 'holy', icon: '🙏', ability: 'Bless', abilityDesc: 'Increases ally attack by 10%.', abilityIcon: '✨' },
+                { name: 'Thief', element: 'dark', icon: '🥷', ability: 'Steal', abilityDesc: 'Deals 120% damage, restores 10% mana.', abilityIcon: '💨' }
+            ],
+            // 2-Star Heroes
+            2: [
+                { name: 'Squire', element: 'fire', icon: '🤺', ability: 'Sword Slash', abilityDesc: 'Deals 150% damage to one enemy.', abilityIcon: '⚔️' },
+                { name: 'Fisher', element: 'water', icon: '🎣', ability: 'Tidal Wave', abilityDesc: 'Deals 100% damage to all enemies.', abilityIcon: '🌊' },
+                { name: 'Herbalist', element: 'nature', icon: '🧙', ability: 'Nature\'s Touch', abilityDesc: 'Heals all allies for 15% HP.', abilityIcon: '🌱' },
+                { name: 'Priest', element: 'holy', icon: '⛪', ability: 'Divine Light', abilityDesc: 'Heals one ally for 30% and cleanses debuffs.', abilityIcon: '💫' },
+                { name: 'Assassin', element: 'dark', icon: '🗡️', ability: 'Backstab', abilityDesc: 'Deals 200% damage to one enemy.', abilityIcon: '🔪' }
+            ],
+            // 3-Star Heroes
+            3: [
+                { name: 'Knight', element: 'fire', icon: '🛡️', ability: 'Shield Bash', abilityDesc: 'Deals 180% damage and stuns for 1 turn.', abilityIcon: '🛡️' },
+                { name: 'Mermaid', element: 'water', icon: '🧜‍♀️', ability: 'Siren Song', abilityDesc: 'Deals 150% damage to all, reduces attack.', abilityIcon: '🎵' },
+                { name: 'Druid', element: 'nature', icon: '🌳', ability: 'Regrowth', abilityDesc: 'Heals all allies for 25% HP over 3 turns.', abilityIcon: '🍃' },
+                { name: 'Paladin', element: 'holy', icon: '⚜️', ability: 'Holy Strike', abilityDesc: 'Deals 200% damage, extra vs Dark.', abilityIcon: '✝️' },
+                { name: 'Warlock', element: 'dark', icon: '🧛', ability: 'Life Drain', abilityDesc: 'Deals 180% damage, heals self for 50%.', abilityIcon: '🩸' }
+            ],
+            // 4-Star Heroes
+            4: [
+                { name: 'Fire Lord', element: 'fire', icon: '🔥', ability: 'Inferno', abilityDesc: 'Deals 250% damage to all, burns for 4 turns.', abilityIcon: '🌋' },
+                { name: 'Ice Queen', element: 'water', icon: '❄️', ability: 'Blizzard', abilityDesc: 'Deals 200% damage to all, freezes for 2 turns.', abilityIcon: '🥶' },
+                { name: 'Forest Guardian', element: 'nature', icon: '🦌', ability: 'Nature\'s Wrath', abilityDesc: 'Deals 220% damage, heals all allies 20%.', abilityIcon: '🌿' },
+                { name: 'Archangel', element: 'holy', icon: '👼', ability: 'Divine Intervention', abilityDesc: 'Revives one fallen ally with 50% HP.', abilityIcon: '🕊️' },
+                { name: 'Shadow Lord', element: 'dark', icon: '👤', ability: 'Darkness', abilityDesc: 'Deals 280% damage, blinds all enemies.', abilityIcon: '🌑' }
+            ],
+            // 5-Star Heroes (Legendary)
+            5: [
+                { name: 'Phoenix', element: 'fire', icon: '🦅', ability: 'Rebirth Flame', abilityDesc: 'Deals 350% damage to all. Self-revives once per battle.', abilityIcon: '🔥' },
+                { name: 'Poseidon', element: 'water', icon: '🔱', ability: 'Tsunami', abilityDesc: 'Deals 300% damage to all, dispels all buffs.', abilityIcon: '🌊' },
+                { name: 'Gaia', element: 'nature', icon: '🌍', ability: 'Mother\'s Embrace', abilityDesc: 'Heals all allies to full HP. Grants regeneration.', abilityIcon: '💚' },
+                { name: 'Zeus', element: 'holy', icon: '⚡', ability: 'Lightning Storm', abilityDesc: 'Deals 400% damage to one enemy, chains to others.', abilityIcon: '⚡' },
+                { name: 'Hades', element: 'dark', icon: '💀', ability: 'Soul Reaper', abilityDesc: 'Instantly kills enemy below 30% HP. Steals their stats.', abilityIcon: '☠️' }
+            ]
+        };
+
+        // ============ GAME STATE ============
+        let gameState = {
+            gems: 150,
+            tickets: 3,
+            heroes: [],
+            defenseTeam: [null, null, null, null, null],
+            attackTeam: [null, null, null, null, null],
+            selectedHero: null,
+            selectedSlot: null,
+            nextHeroId: 1
+        };
+
+        // Load from localStorage
+        function loadGame() {
+            const saved = localStorage.getItem('heroGameState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+            } else {
+                // Give starter heroes
+                giveStarterHeroes();
+            }
+            updateUI();
+        }
+
+        function saveGame() {
+            localStorage.setItem('heroGameState', JSON.stringify(gameState));
+        }
+
+        function giveStarterHeroes() {
+            // Give 3 random 2-star heroes and 2 random 1-star heroes
+            for (let i = 0; i < 2; i++) {
+                const template = HERO_TEMPLATES[2][Math.floor(Math.random() * 5)];
+                gameState.heroes.push(createHero(template, 2));
+            }
+            for (let i = 0; i < 3; i++) {
+                const template = HERO_TEMPLATES[1][Math.floor(Math.random() * 5)];
+                gameState.heroes.push(createHero(template, 1));
+            }
+            saveGame();
+        }
+
+        function createHero(template, stars) {
+            const baseStats = {
+                1: { atk: 200, def: 150, hp: 400 },
+                2: { atk: 350, def: 280, hp: 700 },
+                3: { atk: 550, def: 450, hp: 1100 },
+                4: { atk: 800, def: 680, hp: 1600 },
+                5: { atk: 1100, def: 950, hp: 2200 }
+            };
+
+            const stats = baseStats[stars];
+            const variance = 0.1; // 10% random variance
+
+            return {
+                id: gameState.nextHeroId++,
+                name: template.name,
+                element: template.element,
+                icon: template.icon,
+                stars: stars,
+                level: 1,
+                maxLevel: stars * 10 + 10,
+                xp: 0,
+                xpToNext: 100 * stars,
+                atk: Math.floor(stats.atk * (1 + (Math.random() - 0.5) * variance)),
+                def: Math.floor(stats.def * (1 + (Math.random() - 0.5) * variance)),
+                hp: Math.floor(stats.hp * (1 + (Math.random() - 0.5) * variance)),
+                manaSpeed: MANA_SPEEDS[Math.floor(Math.random() * 3) + (stars < 3 ? 2 : 0)],
+                ability: template.ability,
+                abilityDesc: template.abilityDesc,
+                abilityIcon: template.abilityIcon
+            };
+        }
+
+        // ============ UI FUNCTIONS ============
+        function updateUI() {
+            document.getElementById('gems').textContent = gameState.gems;
+            document.getElementById('tickets').textContent = gameState.tickets;
+            document.getElementById('hero-count').textContent = gameState.heroes.length;
+            renderHeroGrid();
+            renderTeams();
+            updateTeamPower();
+        }
+
+        function renderHeroGrid(filter = 'all') {
+            const grid = document.getElementById('hero-grid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' 
+                ? gameState.heroes 
+                : gameState.heroes.filter(h => h.element === filter);
+
+            // Sort by stars (descending), then power
+            filtered.sort((a, b) => {
+                if (b.stars !== a.stars) return b.stars - a.stars;
+                return (b.atk + b.def + b.hp) - (a.atk + a.def + a.hp);
+            });
+
+            filtered.forEach(hero => {
+                const power = Math.floor((hero.atk + hero.def + hero.hp) / 3);
+                const card = document.createElement('div');
+                card.className = `hero-card element-${hero.element}`;
+                card.onclick = () => showHeroDetail(hero);
+                card.innerHTML = `
+                    <div class="hero-power">⚡${power}</div>
+                    <div class="hero-portrait-large element-${hero.element}">${hero.icon}</div>
+                    <div class="hero-name">${hero.name}</div>
+                    <div class="hero-stars">${'⭐'.repeat(hero.stars)}</div>
+                    <div class="hero-level">Lv.${hero.level}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderTeams() {
+            // Defense team
+            const defSlots = document.querySelectorAll('#defense-team .team-slot');
+            defSlots.forEach((slot, i) => {
+                const hero = gameState.defenseTeam[i];
+                if (hero) {
+                    slot.classList.remove('empty');
+                    slot.innerHTML = `
+                        <div class="hero-portrait element-${hero.element}">${hero.icon}</div>
+                        <div class="hero-stars">${'⭐'.repeat(hero.stars)}</div>
+                    `;
+                } else {
+                    slot.classList.add('empty');
+                    slot.innerHTML = '';
+                }
+            });
+
+            // Attack team
+            const atkSlots = document.querySelectorAll('#attack-team .team-slot');
+            atkSlots.forEach((slot, i) => {
+                const hero = gameState.attackTeam[i];
+                if (hero) {
+                    slot.classList.remove('empty');
+                    slot.innerHTML = `
+                        <div class="hero-portrait element-${hero.element}">${hero.icon}</div>
+                        <div class="hero-stars">${'⭐'.repeat(hero.stars)}</div>
+                    `;
+                } else {
+                    slot.classList.add('empty');
+                    slot.innerHTML = '';
+                }
+            });
+        }
+
+        function updateTeamPower() {
+            const allTeamHeroes = [...gameState.defenseTeam, ...gameState.attackTeam].filter(h => h);
+            const totalPower = allTeamHeroes.reduce((sum, hero) => {
+                return sum + Math.floor((hero.atk + hero.def + hero.hp) / 3);
+            }, 0);
+            document.getElementById('team-power').textContent = totalPower;
+        }
+
+        // ============ TAB NAVIGATION ============
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // ============ FILTER ============
+        function filterHeroes(element) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderHeroGrid(element);
+        }
+
+        // ============ HERO DETAIL MODAL ============
+        function showHeroDetail(hero) {
+            gameState.selectedHero = hero;
+            
+            const modal = document.getElementById('hero-modal');
+            document.getElementById('modal-portrait').className = `hero-detail-portrait element-${hero.element}`;
+            document.getElementById('modal-portrait').textContent = hero.icon;
+            document.getElementById('modal-name').textContent = hero.name;
+            document.getElementById('modal-stars').textContent = '⭐'.repeat(hero.stars);
+            document.getElementById('modal-element').textContent = `${ELEMENTS[hero.element].icon} ${ELEMENTS[hero.element].name} Element`;
+            
+            const maxStat = 1500;
+            document.getElementById('modal-atk').textContent = hero.atk;
+            document.getElementById('modal-atk-bar').style.width = `${(hero.atk / maxStat) * 100}%`;
+            document.getElementById('modal-def').textContent = hero.def;
+            document.getElementById('modal-def-bar').style.width = `${(hero.def / maxStat) * 100}%`;
+            document.getElementById('modal-hp').textContent = hero.hp;
+            document.getElementById('modal-hp-bar').style.width = `${(hero.hp / 3000) * 100}%`;
+            
+            document.getElementById('modal-ability-icon').textContent = hero.abilityIcon;
+            document.getElementById('modal-ability-name').textContent = hero.ability;
+            document.getElementById('modal-mana').textContent = hero.manaSpeed;
+            document.getElementById('modal-ability-desc').textContent = hero.abilityDesc;
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('hero-modal').classList.remove('active');
+            gameState.selectedHero = null;
+        }
+
+        // ============ TEAM MANAGEMENT ============
+        function selectTeamSlot(slotIndex) {
+            gameState.selectedSlot = slotIndex;
+            // Switch to roster tab to select hero
+            showTab('roster');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.querySelectorAll('.tab')[1].classList.remove('active');
+            document.getElementById('roster-tab').classList.add('active');
+            document.getElementById('team-tab').classList.remove('active');
+        }
+
+        function addToTeam() {
+            if (!gameState.selectedHero) return;
+            
+            // Find first empty slot in attack team, or defense team
+            let added = false;
+            for (let i = 0; i < 5; i++) {
+                if (!gameState.attackTeam[i]) {
+                    gameState.attackTeam[i] = gameState.selectedHero;
+                    added = true;
+                    break;
+                }
+            }
+            
+            if (!added) {
+                for (let i = 0; i < 5; i++) {
+                    if (!gameState.defenseTeam[i]) {
+                        gameState.defenseTeam[i] = gameState.selectedHero;
+                        added = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (added) {
+                saveGame();
+                updateUI();
+                closeModal();
+                // Show team tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.getElementById('team-tab').classList.add('active');
+            } else {
+                alert('All team slots are full!');
+            }
+        }
+
+        // ============ SUMMONING ============
+        function summonHero(portalType, count) {
+            let cost, currency, odds;
+            
+            switch(portalType) {
+                case 'basic':
+                    cost = count;
+                    currency = 'tickets';
+                    odds = { 1: 50, 2: 35, 3: 15 };
+                    break;
+                case 'epic':
+                    cost = count === 1 ? 100 : 900;
+                    currency = 'gems';
+                    odds = { 2: 40, 3: 40, 4: 20 };
+                    break;
+                case 'legendary':
+                    cost = count === 1 ? 300 : 2700;
+                    currency = 'gems';
+                    odds = { 3: 50, 4: 40, 5: 10 };
+                    break;
+            }
+            
+            if (gameState[currency] < cost) {
+                alert(`Not enough ${currency}!`);
+                return;
+            }
+            
+            gameState[currency] -= cost;
+            
+            // Perform summons
+            const summoned = [];
+            for (let i = 0; i < count; i++) {
+                const hero = rollHero(odds);
+                summoned.push(hero);
+                gameState.heroes.push(hero);
+            }
+            
+            saveGame();
+            
+            // Show result (just show first hero for now)
+            showSummonResult(summoned[0]);
+        }
+
+        function rollHero(odds) {
+            const roll = Math.random() * 100;
+            let cumulative = 0;
+            let stars = 1;
+            
+            for (const [star, chance] of Object.entries(odds)) {
+                cumulative += chance;
+                if (roll < cumulative) {
+                    stars = parseInt(star);
+                    break;
+                }
+            }
+            
+            const templates = HERO_TEMPLATES[stars];
+            const template = templates[Math.floor(Math.random() * templates.length)];
+            return createHero(template, stars);
+        }
+
+        function showSummonResult(hero) {
+            const result = document.getElementById('summon-result');
+            document.getElementById('summoned-portrait').className = `summoned-portrait element-${hero.element}`;
+            document.getElementById('summoned-portrait').textContent = hero.icon;
+            document.getElementById('summoned-stars').textContent = '⭐'.repeat(hero.stars);
+            document.getElementById('summoned-name').textContent = hero.name;
+            document.getElementById('summoned-element').textContent = `${ELEMENTS[hero.element].icon} ${ELEMENTS[hero.element].name}`;
+            result.classList.add('active');
+        }
+
+        function closeSummonResult() {
+            document.getElementById('summon-result').classList.remove('active');
+            updateUI();
+        }
+
+        // ============ INITIALIZE ============
+        loadGame();
+    </script>
+</body>
+</html>
