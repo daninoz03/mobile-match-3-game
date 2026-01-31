@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Empire Base</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* ============ WORLD ============ */
+        .world {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Sky with clouds */
+        .sky {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(180deg, 
+                #4a90c8 0%, 
+                #6aabe0 30%,
+                #8ac4f0 60%,
+                #b8dcf8 85%,
+                #d8ecfc 100%
+            );
+        }
+
+        /* Animated clouds */
+        .clouds {
+            position: absolute;
+            top: 5%;
+            left: 0;
+            width: 200%;
+            height: 40%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40'%3E%3Cellipse cx='50' cy='25' rx='30' ry='12' fill='rgba(255,255,255,0.8)'/%3E%3Cellipse cx='35' cy='28' rx='20' ry='10' fill='rgba(255,255,255,0.9)'/%3E%3Cellipse cx='65' cy='27' rx='22' ry='11' fill='rgba(255,255,255,0.85)'/%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 35'%3E%3Cellipse cx='40' cy='20' rx='25' ry='10' fill='rgba(255,255,255,0.7)'/%3E%3Cellipse cx='28' cy='22' rx='18' ry='9' fill='rgba(255,255,255,0.8)'/%3E%3C/svg%3E");
+            background-size: 300px 80px, 200px 60px;
+            background-position: 0 0, 150px 30px;
+            background-repeat: repeat-x;
+            animation: cloudMove 60s linear infinite;
+            opacity: 0.9;
+        }
+
+        @keyframes cloudMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Distant mountains - realistic photo */
+        .mountains {
+            position: absolute;
+            bottom: 48%;
+            left: -5%;
+            width: 110%;
+            height: 30%;
+            background: url('assets/textures/mountains.jpg') center center no-repeat;
+            background-size: cover;
+            filter: brightness(0.85) saturate(1.1);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 70%, transparent 100%);
+        }
+
+        /* Mountain haze overlay */
+        .mountains::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, 
+                rgba(180,210,240,0.4) 0%,
+                rgba(100,150,100,0.2) 50%,
+                rgba(80,120,60,0.3) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* ============ MEDIEVAL GROUND TEXTURE SYSTEM ============ */
+        .ground-container {
+            position: absolute;
+            top: 42%;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Base dirt/earth seamless texture */
+        .ground-base {
+            position: absolute;
+            top: 0;
+            left: -10%;
+            width: 120%;
+            height: 100%;
+            background-color: #5a4a3a;
+            background-image: 
+                /* Dirt grain pattern */
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%235a4a3a' width='100' height='100'/%3E%3Ccircle fill='%23504030' cx='15' cy='20' r='8'/%3E%3Ccircle fill='%23655545' cx='45' cy='15' r='6'/%3E%3Ccircle fill='%234a3a2a' cx='75' cy='25' r='10'/%3E%3Ccircle fill='%23605040' cx='25' cy='55' r='7'/%3E%3Ccircle fill='%23554535' cx='60' cy='50' r='9'/%3E%3Ccircle fill='%234f3f2f' cx='85' cy='60' r='6'/%3E%3Ccircle fill='%23635343' cx='10' cy='80' r='8'/%3E%3Ccircle fill='%23504030' cx='50' cy='85' r='7'/%3E%3Ccircle fill='%235a4a3a' cx='80' cy='90' r='9'/%3E%3Ccircle fill='%23453525' cx='35' cy='35' r='5'/%3E%3Ccircle fill='%236a5a4a' cx='70' cy='75' r='6'/%3E%3Ccircle fill='%23483828' cx='20' cy='70' r='4'/%3E%3Ccircle fill='%235f4f3f' cx='90' cy='35' r='5'/%3E%3C/svg%3E");
+            background-size: 80px 80px;
+        }
+
+        /* Stone cobblestone texture for paths/central area */
+        .ground-stone-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23706560' width='120' height='120'/%3E%3Crect fill='%23807570' x='5' y='5' width='50' height='35' rx='3'/%3E%3Crect fill='%23756a65' x='60' y='5' width='55' height='30' rx='3'/%3E%3Crect fill='%237a6f6a' x='5' y='45' width='35' height='30' rx='3'/%3E%3Crect fill='%23858078' x='45' y='40' width='40' height='38' rx='3'/%3E%3Crect fill='%236f6460' x='90' y='38' width='25' height='35' rx='3'/%3E%3Crect fill='%23807874' x='5' y='80' width='45' height='35' rx='3'/%3E%3Crect fill='%23736863' x='55' y='82' width='30' height='33' rx='3'/%3E%3Crect fill='%237d7570' x='90' y='78' width='25' height='37' rx='3'/%3E%3Crect fill='%23625a55' x='8' y='8' width='44' height='29' rx='2' opacity='0.3'/%3E%3Crect fill='%23625a55' x='48' y='43' width='34' height='32' rx='2' opacity='0.3'/%3E%3C/svg%3E");
+            background-size: 100px 100px;
+            mask-image: 
+                radial-gradient(ellipse 55% 60% at 50% 45%, black 0%, transparent 65%);
+            -webkit-mask-image: 
+                radial-gradient(ellipse 55% 60% at 50% 45%, black 0%, transparent 65%);
+        }
+
+        /* Grass texture - seamless tileable */
+        .ground-grass-patches {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect fill='%234a8535' width='60' height='60'/%3E%3Cpath d='M5,60 Q6,45 8,30' stroke='%23408030' stroke-width='2' fill='none'/%3E%3Cpath d='M10,60 Q12,40 15,25' stroke='%2355952a' stroke-width='2' fill='none'/%3E%3Cpath d='M18,60 Q17,50 20,35' stroke='%23458530' stroke-width='2' fill='none'/%3E%3Cpath d='M25,60 Q28,42 30,28' stroke='%23509035' stroke-width='2' fill='none'/%3E%3Cpath d='M35,60 Q34,48 38,32' stroke='%23408028' stroke-width='2' fill='none'/%3E%3Cpath d='M42,60 Q45,44 48,30' stroke='%2358982f' stroke-width='2' fill='none'/%3E%3Cpath d='M50,60 Q49,52 52,38' stroke='%23478532' stroke-width='2' fill='none'/%3E%3Cpath d='M55,60 Q58,46 57,33' stroke='%23509030' stroke-width='2' fill='none'/%3E%3Ccircle fill='%23458530' cx='8' cy='50' r='6'/%3E%3Ccircle fill='%23509035' cx='28' cy='48' r='8'/%3E%3Ccircle fill='%23438028' cx='48' cy='52' r='7'/%3E%3Ccircle fill='%234a8830' cx='18' cy='55' r='5'/%3E%3Ccircle fill='%23559238' cx='38' cy='54' r='6'/%3E%3C/svg%3E");
+            background-size: 50px 50px;
+            mask-image: 
+                radial-gradient(ellipse 28% 50% at 3% 50%, black 0%, transparent 70%),
+                radial-gradient(ellipse 28% 50% at 97% 50%, black 0%, transparent 70%),
+                radial-gradient(ellipse 15% 20% at 30% 25%, black 0%, transparent 80%),
+                radial-gradient(ellipse 15% 20% at 70% 25%, black 0%, transparent 80%),
+                radial-gradient(ellipse 12% 15% at 18% 55%, black 0%, transparent 80%),
+                radial-gradient(ellipse 12% 15% at 82% 55%, black 0%, transparent 80%),
+                radial-gradient(ellipse 10% 12% at 25% 80%, black 0%, transparent 80%),
+                radial-gradient(ellipse 10% 12% at 75% 80%, black 0%, transparent 80%);
+            -webkit-mask-image: 
+                radial-gradient(ellipse 28% 50% at 3% 50%, black 0%, transparent 70%),
+                radial-gradient(ellipse 28% 50% at 97% 50%, black 0%, transparent 70%),
+                radial-gradient(ellipse 15% 20% at 30% 25%, black 0%, transparent 80%),
+                radial-gradient(ellipse 15% 20% at 70% 25%, black 0%, transparent 80%),
+                radial-gradient(ellipse 12% 15% at 18% 55%, black 0%, transparent 80%),
+                radial-gradient(ellipse 12% 15% at 82% 55%, black 0%, transparent 80%),
+                radial-gradient(ellipse 10% 12% at 25% 80%, black 0%, transparent 80%),
+                radial-gradient(ellipse 10% 12% at 75% 80%, black 0%, transparent 80%);
+        }
+
+        /* Additional grass detail layer */
+        .ground-grass-texture {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%23559540' width='40' height='40'/%3E%3Ccircle fill='%234a8a35' cx='10' cy='10' r='8'/%3E%3Ccircle fill='%23609a48' cx='30' cy='15' r='6'/%3E%3Ccircle fill='%23508838' cx='15' cy='30' r='7'/%3E%3Ccircle fill='%235a9842' cx='35' cy='35' r='5'/%3E%3Ccircle fill='%23488530' cx='5' cy='25' r='4'/%3E%3C/svg%3E");
+            background-size: 35px 35px;
+            mask-image: 
+                radial-gradient(ellipse 25% 45% at 2% 50%, black 0%, transparent 60%),
+                radial-gradient(ellipse 25% 45% at 98% 50%, black 0%, transparent 60%);
+            -webkit-mask-image: 
+                radial-gradient(ellipse 25% 45% at 2% 50%, black 0%, transparent 60%),
+                radial-gradient(ellipse 25% 45% at 98% 50%, black 0%, transparent 60%);
+        }
+
+        /* Worn/trampled areas near buildings */
+        .ground-worn-areas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                /* Castle area */
+                radial-gradient(ellipse 20% 14% at 50% 12%, rgba(90,80,70,0.85) 0%, rgba(75,65,55,0.4) 60%, transparent 100%),
+                /* Mine & Farm areas */
+                radial-gradient(ellipse 12% 10% at 18% 16%, rgba(85,75,65,0.75) 0%, transparent 80%),
+                radial-gradient(ellipse 12% 10% at 82% 16%, rgba(85,75,65,0.75) 0%, transparent 80%),
+                /* Other buildings */
+                radial-gradient(ellipse 8% 6% at 10% 32%, rgba(80,70,60,0.6) 0%, transparent 80%),
+                radial-gradient(ellipse 8% 6% at 90% 32%, rgba(80,70,60,0.6) 0%, transparent 80%),
+                radial-gradient(ellipse 10% 8% at 22% 45%, rgba(82,72,62,0.65) 0%, transparent 80%),
+                radial-gradient(ellipse 10% 8% at 78% 45%, rgba(82,72,62,0.65) 0%, transparent 80%),
+                radial-gradient(ellipse 9% 7% at 34% 56%, rgba(78,68,58,0.6) 0%, transparent 80%),
+                radial-gradient(ellipse 9% 7% at 66% 56%, rgba(78,68,58,0.6) 0%, transparent 80%),
+                radial-gradient(ellipse 8% 6% at 26% 68%, rgba(75,65,55,0.55) 0%, transparent 80%),
+                radial-gradient(ellipse 8% 6% at 74% 68%, rgba(75,65,55,0.55) 0%, transparent 80%);
+        }
+
+        /* Ground depth - atmospheric perspective */
+        .ground-depth {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg,
+                rgba(70,80,60,0) 0%,
+                rgba(60,70,50,0.08) 30%,
+                rgba(50,60,40,0.2) 60%,
+                rgba(40,50,30,0.4) 80%,
+                rgba(30,40,20,0.6) 100%
+            );
+            pointer-events: none;
+        }
+
+        /* ============ PATHS LAYER (screen space) ============ */
+        .paths-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .paths-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .path-outer {
+            fill: none;
+            stroke: #3d3025;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0.2px 0.2px 0.3px rgba(0,0,0,0.5));
+        }
+
+        .path-middle {
+            fill: none;
+            stroke: #7a6550;
+            stroke-width: 2.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .path-inner {
+            fill: none;
+            stroke: #9a8570;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .path-detail {
+            fill: none;
+            stroke: rgba(200,180,160,0.5);
+            stroke-width: 1.2;
+            stroke-linecap: round;
+            stroke-dasharray: 0.5 1;
+        }
+
+        .path-stones {
+            fill: #5a4a38;
+            opacity: 0.7;
+        }
+
+        /* ============ TERRAIN DETAILS ============ */
+        .terrain-details {
+            position: absolute;
+            top: 42%;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .grass-tuft {
+            position: absolute;
+            width: 35px;
+            height: 28px;
+            background: 
+                linear-gradient(85deg, transparent 45%, #4a9a3a 46%, #4a9a3a 48%, transparent 49%),
+                linear-gradient(95deg, transparent 45%, #3d8a2d 46%, #3d8a2d 48%, transparent 49%),
+                linear-gradient(80deg, transparent 42%, #5aaa4a 43%, #5aaa4a 46%, transparent 47%),
+                linear-gradient(100deg, transparent 40%, #4a9a3a 41%, #4a9a3a 44%, transparent 45%),
+                linear-gradient(75deg, transparent 48%, #3d8a2d 49%, #3d8a2d 52%, transparent 53%);
+            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.2));
+        }
+
+        .rock {
+            position: absolute;
+            width: 28px;
+            height: 20px;
+            background: linear-gradient(145deg, #a8a8a8 0%, #888888 30%, #686868 70%, #585858 100%);
+            border-radius: 45% 55% 50% 50% / 60% 60% 40% 40%;
+            box-shadow: 
+                3px 3px 6px rgba(0,0,0,0.35),
+                inset -4px -4px 8px rgba(0,0,0,0.25),
+                inset 3px 3px 6px rgba(255,255,255,0.15);
+        }
+
+        .rock.large {
+            width: 45px;
+            height: 32px;
+        }
+
+        .rock.small {
+            width: 18px;
+            height: 12px;
+        }
+
+        .grass-patch {
+            position: absolute;
+            width: 60px;
+            height: 40px;
+            background: radial-gradient(ellipse 100% 100% at 50% 60%, #4a9a3a 0%, #3d8a2d 40%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+
+        .wildflower {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            box-shadow: 0 0 3px rgba(255,255,255,0.3);
+        }
+
+        .wildflower.yellow { background: radial-gradient(circle, #ffd700 40%, #cc9900 100%); }
+        .wildflower.white { background: radial-gradient(circle, #ffffff 40%, #dddddd 100%); }
+        .wildflower.purple { background: radial-gradient(circle, #9966cc 40%, #663399 100%); }
+        .wildflower.red { background: radial-gradient(circle, #ff6b6b 40%, #cc4444 100%); }
+
+        .bush-3d {
+            position: absolute;
+            width: 55px;
+            height: 40px;
+            background: 
+                radial-gradient(ellipse 70% 60% at 50% 65%, #2a5522 0%, transparent 100%),
+                radial-gradient(ellipse 55% 50% at 25% 55%, #357a2d 0%, transparent 100%),
+                radial-gradient(ellipse 55% 50% at 75% 55%, #3d8535 0%, transparent 100%),
+                radial-gradient(ellipse 45% 40% at 50% 45%, #459a3d 0%, transparent 100%);
+            filter: drop-shadow(3px 4px 5px rgba(0,0,0,0.35));
+        }
+
+        .tree-small {
+            position: absolute;
+            width: 35px;
+            height: 55px;
+        }
+
+        .tree-small::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 18px;
+            background: linear-gradient(90deg, #4a3525 0%, #6a4a35 50%, #4a3525 100%);
+            border-radius: 2px;
+            box-shadow: 2px 2px 3px rgba(0,0,0,0.3);
+        }
+
+        .tree-small::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-bottom: 42px solid #2d6a22;
+            filter: drop-shadow(3px 3px 4px rgba(0,0,0,0.35));
+        }
+
+        .stone-pile {
+            position: absolute;
+            width: 40px;
+            height: 25px;
+        }
+
+        .stone-pile::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 5px;
+            width: 20px;
+            height: 14px;
+            background: linear-gradient(135deg, #9a9a9a 0%, #707070 100%);
+            border-radius: 40% 50% 45% 55%;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stone-pile::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 18px;
+            width: 18px;
+            height: 12px;
+            background: linear-gradient(135deg, #a8a8a8 0%, #888888 100%);
+            border-radius: 45% 55% 50% 50%;
+            box-shadow: 2px 2px 3px rgba(0,0,0,0.25);
+        }
+
+        /* ============ RIVER ============ */
+        .river-container {
+            position: absolute;
+            top: 40%;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            transform: perspective(800px) rotateX(55deg);
+            transform-origin: center top;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .river-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .river-water {
+            fill: url(#riverGrad);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .river-bank {
+            fill: none;
+            stroke: #6b5a45;
+            stroke-width: 50;
+            stroke-linecap: round;
+        }
+
+        .river-bank-inner {
+            fill: none;
+            stroke: #8b7a65;
+            stroke-width: 46;
+            stroke-linecap: round;
+        }
+
+        .river-bank-path {
+            fill: none;
+            stroke: #4a3a28;
+            stroke-width: 8;
+            stroke-dasharray: 2 6;
+            opacity: 0.4;
+        }
+
+        .river-highlight {
+            fill: url(#shimmerGrad);
+            opacity: 0.5;
+            animation: shimmer 2.5s ease-in-out infinite;
+        }
+
+        .river-ripples {
+            fill: none;
+            stroke: rgba(255,255,255,0.3);
+            stroke-width: 2;
+            stroke-dasharray: 5 15;
+            animation: rippleFlow 4s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes rippleFlow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -100; }
+        }
+
+        /* ============ BUILDINGS ============ */
+        .buildings-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .building {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            /* Ensure buildings are always visible */
+            opacity: 1 !important;
+            visibility: visible !important;
+            overflow: visible;
+        }
+
+        .building:hover {
+            transform: scale(1.08) translateY(-5px);
+            filter: brightness(1.15) drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+            z-index: 100;
+        }
+
+        .building:hover .bld-name {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .building img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(4px 8px 12px rgba(0,0,0,0.6));
+        }
+
+        /* Ground shadow under buildings */
+        .building::before {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            height: 20px;
+            background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 40%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .bld-name {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, rgba(40,25,15,0.95), rgba(25,15,5,0.95));
+            color: #FFD700;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.2s;
+            border: 2px solid #8B5A2B;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+            z-index: 101;
+        }
+
+        .bld-level {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #2a1a0a;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            z-index: 999;
+        }
+
+        /* Abandoned state */
+        .building.abandoned img {
+            filter: grayscale(90%) brightness(0.4) drop-shadow(3px 5px 8px rgba(0,0,0,0.5));
+        }
+
+        .building.abandoned:hover img {
+            filter: grayscale(70%) brightness(0.6) drop-shadow(3px 5px 8px rgba(0,0,0,0.5));
+        }
+
+        .building.abandoned .bld-level {
+            display: none;
+        }
+
+        .building.abandoned::after {
+            content: '🔨';
+            position: absolute;
+            top: 0;
+            right: 10px;
+            font-size: 1.8em;
+            animation: hammerBounce 0.8s infinite;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        }
+
+        @keyframes hammerBounce {
+            0%, 100% { transform: translateY(0) rotate(-10deg); }
+            50% { transform: translateY(-12px) rotate(10deg); }
+        }
+
+        /* Building positions - aligned with paths and on land */
+        #castle { width: 180px; left: 50%; top: 38%; transform: translateX(-50%); z-index: 40; }
+        #mine { width: 100px; left: 22%; top: 44%; z-index: 35; }
+        #farm { width: 110px; right: 20%; top: 44%; z-index: 35; }
+        #barracks { width: 100px; left: 18%; top: 58%; z-index: 30; }
+        #forge { width: 100px; right: 18%; top: 54%; z-index: 30; }
+        #treasury { width: 90px; right: 6%; top: 48%; z-index: 32; }
+        #watchtower { width: 70px; left: 5%; top: 58%; z-index: 31; }
+        #training { width: 100px; left: 30%; top: 64%; z-index: 25; }
+        #market { width: 100px; right: 28%; top: 64%; z-index: 25; }
+        #academy { width: 100px; left: 22%; top: 74%; z-index: 20; }
+        #shrine { width: 80px; right: 20%; top: 74%; z-index: 20; }
+
+        /* CSS filters to differentiate buildings using same base images */
+        /* Castle uses tavern - make it grander with scale */
+        #castle img { transform: scale(1.1); }
+        
+        /* Mine uses tower2 - add brown/sepia tint for mining feel */
+        #mine img { filter: sepia(30%) saturate(120%) brightness(95%); }
+        
+        /* Farm uses house - warm golden tint for harvest feel */
+        #farm img { filter: sepia(15%) saturate(110%) hue-rotate(-5deg); }
+        
+        /* Barracks uses blacksmith - add red military tint */
+        #barracks img { filter: hue-rotate(-15deg) saturate(130%); }
+        
+        /* Forge uses blacksmith - slight contrast boost (original look) */
+        #forge img { filter: contrast(105%) brightness(102%); }
+        
+        /* Treasury uses tower - golden tint for wealth */
+        #treasury img { filter: sepia(20%) saturate(150%) hue-rotate(15deg) brightness(105%); }
+        
+        /* Watchtower uses tower - cooler tint for defense */
+        #watchtower img { filter: saturate(90%) brightness(95%); }
+        
+        /* Training uses house - stronger, weathered look */
+        #training img { filter: contrast(110%) sepia(10%) saturate(80%); }
+        
+        /* Market uses tavern - vibrant colors for trade */
+        #market img { filter: saturate(120%) brightness(105%) hue-rotate(5deg); }
+        
+        /* Academy uses house - cooler blue scholarly tint */
+        #academy img { filter: hue-rotate(20deg) saturate(85%) brightness(102%); }
+        
+        /* Shrine uses tower2 - warm spiritual glow */
+        #shrine img { filter: sepia(25%) brightness(110%) saturate(90%); }
+
+        /* ============ WALKING VILLAGERS ============ */
+        .villagers-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+            overflow: hidden;
+        }
+
+        .villager {
+            position: absolute;
+            width: 20px;
+            height: 30px;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        .villager-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Villager head */
+        .villager-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at 30% 30%, #f5d0b0 0%, #d4a574 100%);
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Villager body/clothes */
+        .villager-body::after {
+            content: '';
+            position: absolute;
+            top: 9px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 16px;
+            background: linear-gradient(180deg, #8b4513 0%, #6b3510 100%);
+            border-radius: 3px 3px 0 0;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+        }
+
+        /* Walking animation - legs */
+        .villager-legs {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .villager-legs::before,
+        .villager-legs::after {
+            content: '';
+            width: 4px;
+            height: 8px;
+            background: #4a3520;
+            border-radius: 1px;
+            animation: walkLegs 0.4s ease-in-out infinite alternate;
+        }
+
+        .villager-legs::after {
+            animation-delay: -0.2s;
+        }
+
+        @keyframes walkLegs {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-2px); }
+        }
+
+        /* Different villager colors */
+        .villager.farmer .villager-body::after {
+            background: linear-gradient(180deg, #228B22 0%, #1a6b1a 100%);
+        }
+
+        .villager.merchant .villager-body::after {
+            background: linear-gradient(180deg, #4169E1 0%, #3050b0 100%);
+        }
+
+        .villager.guard .villager-body::after {
+            background: linear-gradient(180deg, #8B0000 0%, #5a0000 100%);
+        }
+
+        .villager.worker .villager-body::after {
+            background: linear-gradient(180deg, #DAA520 0%, #b8860b 100%);
+        }
+
+        /* Walking paths for villagers */
+        @keyframes walkPath1 {
+            0% { left: 50%; top: 85%; }
+            25% { left: 45%; top: 70%; }
+            50% { left: 35%; top: 60%; }
+            75% { left: 28%; top: 52%; }
+            100% { left: 50%; top: 85%; }
+        }
+
+        @keyframes walkPath2 {
+            0% { left: 50%; top: 85%; }
+            25% { left: 55%; top: 70%; }
+            50% { left: 65%; top: 60%; }
+            75% { left: 72%; top: 52%; }
+            100% { left: 50%; top: 85%; }
+        }
+
+        @keyframes walkPath3 {
+            0% { left: 30%; top: 75%; }
+            33% { left: 40%; top: 68%; }
+            66% { left: 50%; top: 60%; }
+            100% { left: 30%; top: 75%; }
+        }
+
+        @keyframes walkPath4 {
+            0% { left: 70%; top: 75%; }
+            33% { left: 60%; top: 68%; }
+            66% { left: 50%; top: 60%; }
+            100% { left: 70%; top: 75%; }
+        }
+
+        @keyframes walkPath5 {
+            0% { left: 50%; top: 55%; }
+            25% { left: 42%; top: 50%; }
+            50% { left: 30%; top: 48%; }
+            75% { left: 42%; top: 50%; }
+            100% { left: 50%; top: 55%; }
+        }
+
+        @keyframes walkPath6 {
+            0% { left: 50%; top: 55%; }
+            25% { left: 58%; top: 50%; }
+            50% { left: 70%; top: 48%; }
+            75% { left: 58%; top: 50%; }
+            100% { left: 50%; top: 55%; }
+        }
+
+        .villager.v1 { animation: walkPath1 18s linear infinite; }
+        .villager.v2 { animation: walkPath2 20s linear infinite; animation-delay: -5s; }
+        .villager.v3 { animation: walkPath3 15s linear infinite; animation-delay: -3s; }
+        .villager.v4 { animation: walkPath4 16s linear infinite; animation-delay: -8s; }
+        .villager.v5 { animation: walkPath5 12s linear infinite; animation-delay: -2s; }
+        .villager.v6 { animation: walkPath6 14s linear infinite; animation-delay: -7s; }
+
+        /* ============ TREES ============ */
+        .tree {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .tree img {
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));
+        }
+
+        /* ============ HEADER ============ */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(35,25,15,0.98), rgba(25,18,10,0.95));
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 1000;
+            border-bottom: 3px solid #8B5A2B;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(139,90,43,0.6), rgba(90,60,30,0.4));
+            padding: 10px 18px;
+            border-radius: 25px;
+            border: 2px solid rgba(218,165,32,0.5);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .resource-icon { font-size: 1.4em; }
+        .resource-amount { color: #FFD700; font-weight: bold; font-size: 1.1em; }
+        .resource-rate { color: #90EE90; font-size: 0.75em; margin-left: 5px; }
+
+        /* ============ BOTTOM NAVIGATION ============ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: linear-gradient(180deg, rgba(30,15,10,0.95) 0%, rgba(20,10,5,1) 100%);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 3px solid #5a3a20;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #8a7060;
+            text-decoration: none;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            padding: 8px 20px;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            color: #ffd700;
+        }
+
+        .nav-btn .nav-icon {
+            font-size: 1.8em;
+        }
+
+        .nav-btn.battle {
+            background: linear-gradient(180deg, #DC143C 0%, #8B0000 100%);
+            border-radius: 15px;
+            color: #fff;
+            padding: 10px 25px;
+            border: 2px solid #ffd700;
+            margin-top: -15px;
+        }
+
+        .nav-btn.battle:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(220,20,60,0.5);
+        }
+
+        /* ============ MODAL ============ */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-bg.show { display: flex; }
+
+        .modal {
+            background: linear-gradient(180deg, #3a2a1a 0%, #2a1a0a 100%);
+            border: 3px solid #8B5A2B;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            color: #DEB887;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 { 
+            color: #FFD700; 
+            margin-bottom: 8px; 
+            font-size: 1.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .modal-status { font-size: 0.9em; margin-bottom: 15px; }
+        .modal-status.ok { color: #90EE90; }
+        .modal-status.no { color: #FF6B6B; }
+        .modal p { line-height: 1.6; margin-bottom: 15px; font-size: 0.95em; opacity: 0.9; }
+
+        .stats { 
+            background: rgba(0,0,0,0.4); 
+            border-radius: 10px; 
+            padding: 15px; 
+            margin-bottom: 15px;
+            border: 1px solid rgba(139,90,43,0.3);
+        }
+
+        .stat { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            border-bottom: 1px solid rgba(139,90,43,0.3); 
+            font-size: 0.95em; 
+        }
+        .stat:last-child { border: none; }
+
+        .modal-btn {
+            width: 100%;
+            background: linear-gradient(180deg, #228B22, #006400);
+            border: 2px solid #32CD32;
+            padding: 14px;
+            color: #90EE90;
+            font-family: 'Cinzel', serif;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(34,139,34,0.4);
+        }
+
+        .modal-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(34,139,34,0.6);
+        }
+
+        .modal-btn:disabled { 
+            background: linear-gradient(180deg, #444, #333); 
+            border-color: #555; 
+            color: #666; 
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .costs { display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 1em; }
+        .cost { display: flex; align-items: center; gap: 6px; }
+        .cost.bad { color: #FF6B6B; }
+
+        .close-x { 
+            float: right; 
+            background: none; 
+            border: none; 
+            color: #DEB887; 
+            font-size: 1.6em; 
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-x:hover { color: #FFD700; }
+    </style>
+</head>
+<body>
+    <div class="world">
+        <!-- Sky -->
+        <div class="sky"></div>
+        <div class="clouds"></div>
+        <div class="mountains"></div>
+        
+        <!-- Multi-layer Ground System -->
+        <div class="ground-container">
+            <div class="ground-base"></div>
+            <div class="ground-stone-overlay"></div>
+            <div class="ground-grass-patches"></div>
+            <div class="ground-grass-texture"></div>
+            <div class="ground-worn-areas"></div>
+            <div class="ground-depth"></div>
+        </div>
+        
+        <!-- Terrain Details (scattered across ground) -->
+        <div class="terrain-details">
+            <!-- Grass tufts on edges -->
+            <div class="grass-tuft" style="left: 3%; top: 12%;"></div>
+            <div class="grass-tuft" style="left: 94%; top: 15%;"></div>
+            <div class="grass-tuft" style="left: 6%; top: 35%;"></div>
+            <div class="grass-tuft" style="left: 91%; top: 38%;"></div>
+            <div class="grass-tuft" style="left: 4%; top: 55%;"></div>
+            <div class="grass-tuft" style="left: 93%; top: 58%;"></div>
+            <div class="grass-tuft" style="left: 5%; top: 75%;"></div>
+            <div class="grass-tuft" style="left: 92%; top: 78%;"></div>
+            
+            <!-- Soft grass patches -->
+            <div class="grass-patch" style="left: 1%; top: 25%;"></div>
+            <div class="grass-patch" style="left: 95%; top: 28%;"></div>
+            <div class="grass-patch" style="left: 2%; top: 48%;"></div>
+            <div class="grass-patch" style="left: 94%; top: 52%;"></div>
+            <div class="grass-patch" style="left: 3%; top: 68%;"></div>
+            <div class="grass-patch" style="left: 93%; top: 72%;"></div>
+            
+            <!-- Rocks scattered around -->
+            <div class="rock" style="left: 8%; top: 18%;"></div>
+            <div class="rock large" style="left: 88%; top: 22%;"></div>
+            <div class="rock small" style="left: 12%; top: 32%;"></div>
+            <div class="rock" style="left: 85%; top: 35%;"></div>
+            <div class="rock large" style="left: 6%; top: 50%;"></div>
+            <div class="rock small" style="left: 90%; top: 53%;"></div>
+            <div class="rock" style="left: 10%; top: 70%;"></div>
+            <div class="rock" style="left: 87%; top: 74%;"></div>
+            <div class="rock large" style="left: 4%; top: 88%;"></div>
+            <div class="rock small" style="left: 92%; top: 85%;"></div>
+            
+            <!-- Stone piles near paths -->
+            <div class="stone-pile" style="left: 42%; top: 65%;"></div>
+            <div class="stone-pile" style="left: 55%; top: 72%;"></div>
+            
+            <!-- Wildflowers in grass areas -->
+            <div class="wildflower yellow" style="left: 5%; top: 28%;"></div>
+            <div class="wildflower white" style="left: 7%; top: 30%;"></div>
+            <div class="wildflower purple" style="left: 92%; top: 32%;"></div>
+            <div class="wildflower yellow" style="left: 4%; top: 52%;"></div>
+            <div class="wildflower red" style="left: 94%; top: 55%;"></div>
+            <div class="wildflower white" style="left: 6%; top: 72%;"></div>
+            <div class="wildflower purple" style="left: 91%; top: 75%;"></div>
+            <div class="wildflower yellow" style="left: 8%; top: 90%;"></div>
+            <div class="wildflower red" style="left: 89%; top: 88%;"></div>
+            
+            <!-- Bushes on edges -->
+            <div class="bush-3d" style="left: 1%; top: 20%;"></div>
+            <div class="bush-3d" style="left: 96%; top: 24%;"></div>
+            <div class="bush-3d" style="left: 0%; top: 45%;"></div>
+            <div class="bush-3d" style="left: 97%; top: 48%;"></div>
+            <div class="bush-3d" style="left: 1%; top: 65%;"></div>
+            <div class="bush-3d" style="left: 96%; top: 68%;"></div>
+            <div class="bush-3d" style="left: 2%; top: 82%;"></div>
+            <div class="bush-3d" style="left: 95%; top: 85%;"></div>
+            
+            <!-- Small trees -->
+            <div class="tree-small" style="left: 2%; top: 8%;"></div>
+            <div class="tree-small" style="left: 95%; top: 10%;"></div>
+            <div class="tree-small" style="left: 0%; top: 38%;"></div>
+            <div class="tree-small" style="left: 98%; top: 40%;"></div>
+            <div class="tree-small" style="left: 1%; top: 58%;"></div>
+            <div class="tree-small" style="left: 97%; top: 62%;"></div>
+        </div>
+        
+        <!-- Paths Overlay (screen-space positioned) -->
+        <div class="paths-overlay">
+            <svg class="paths-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <!-- Path definitions using screen percentages -->
+                <!-- Main road: bottom center to castle -->
+                <g>
+                    <path class="path-outer" d="M 50,100 Q 50,78 50,60 L 50,48"/>
+                    <path class="path-middle" d="M 50,100 Q 50,78 50,60 L 50,48"/>
+                    <path class="path-inner" d="M 50,100 Q 50,78 50,60 L 50,48"/>
+                    <path class="path-detail" d="M 50,100 Q 50,78 50,60 L 50,48"/>
+                </g>
+                
+                <!-- Path to Mine (left) -->
+                <g>
+                    <path class="path-outer" d="M 50,54 Q 40,52 28,50"/>
+                    <path class="path-middle" d="M 50,54 Q 40,52 28,50"/>
+                    <path class="path-inner" d="M 50,54 Q 40,52 28,50"/>
+                </g>
+                
+                <!-- Path to Farm (right) -->
+                <g>
+                    <path class="path-outer" d="M 50,54 Q 60,52 72,50"/>
+                    <path class="path-middle" d="M 50,54 Q 60,52 72,50"/>
+                    <path class="path-inner" d="M 50,54 Q 60,52 72,50"/>
+                </g>
+                
+                <!-- Path to Watchtower (far left) -->
+                <g>
+                    <path class="path-outer" d="M 24,60 Q 16,62 8,64"/>
+                    <path class="path-middle" d="M 24,60 Q 16,62 8,64"/>
+                    <path class="path-inner" d="M 24,60 Q 16,62 8,64"/>
+                </g>
+                
+                <!-- Path to Treasury (far right) -->
+                <g>
+                    <path class="path-outer" d="M 72,50 Q 82,52 92,54"/>
+                    <path class="path-middle" d="M 72,50 Q 82,52 92,54"/>
+                    <path class="path-inner" d="M 72,50 Q 82,52 92,54"/>
+                </g>
+                
+                <!-- Path to Barracks (left middle) -->
+                <g>
+                    <path class="path-outer" d="M 50,60 Q 38,60 24,60"/>
+                    <path class="path-middle" d="M 50,60 Q 38,60 24,60"/>
+                    <path class="path-inner" d="M 50,60 Q 38,60 24,60"/>
+                </g>
+                
+                <!-- Path to Forge (right middle) -->
+                <g>
+                    <path class="path-outer" d="M 50,60 Q 62,60 76,60"/>
+                    <path class="path-middle" d="M 50,60 Q 62,60 76,60"/>
+                    <path class="path-inner" d="M 50,60 Q 62,60 76,60"/>
+                </g>
+                
+                <!-- Path to Training (left lower) -->
+                <g>
+                    <path class="path-outer" d="M 50,68 Q 42,68 36,68"/>
+                    <path class="path-middle" d="M 50,68 Q 42,68 36,68"/>
+                    <path class="path-inner" d="M 50,68 Q 42,68 36,68"/>
+                </g>
+                
+                <!-- Path to Market (right lower) -->
+                <g>
+                    <path class="path-outer" d="M 50,68 Q 58,68 66,68"/>
+                    <path class="path-middle" d="M 50,68 Q 58,68 66,68"/>
+                    <path class="path-inner" d="M 50,68 Q 58,68 66,68"/>
+                </g>
+                
+                <!-- Path to Academy (far left lower) -->
+                <g>
+                    <path class="path-outer" d="M 36,68 Q 32,74 28,78"/>
+                    <path class="path-middle" d="M 36,68 Q 32,74 28,78"/>
+                    <path class="path-inner" d="M 36,68 Q 32,74 28,78"/>
+                </g>
+                
+                <!-- Path to Shrine (far right lower) -->
+                <g>
+                    <path class="path-outer" d="M 66,68 Q 70,74 76,78"/>
+                    <path class="path-middle" d="M 66,68 Q 70,74 76,78"/>
+                    <path class="path-inner" d="M 66,68 Q 70,74 76,78"/>
+                </g>
+                
+                <!-- Decorative stones along main path -->
+                <g class="path-stones">
+                    <circle cx="48" cy="95" r="1"/>
+                    <circle cx="52" cy="88" r="0.8"/>
+                    <circle cx="49" cy="80" r="1.2"/>
+                    <circle cx="51" cy="72" r="0.9"/>
+                    <circle cx="48" cy="65" r="1"/>
+                    <circle cx="52" cy="58" r="1.1"/>
+                    <circle cx="49" cy="52" r="0.8"/>
+                </g>
+            </svg>
+        </div>
+        
+        <!-- River -->
+        <div class="river-container">
+            <svg class="river-svg" viewBox="0 0 1000 1500" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="riverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#6dbde8"/>
+                        <stop offset="30%" style="stop-color:#5ba8d8"/>
+                        <stop offset="70%" style="stop-color:#4a98c8"/>
+                        <stop offset="100%" style="stop-color:#3a88b8"/>
+                    </linearGradient>
+                    <linearGradient id="shimmerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:rgba(255,255,255,0)"/>
+                        <stop offset="30%" style="stop-color:rgba(255,255,255,0.4)"/>
+                        <stop offset="50%" style="stop-color:rgba(255,255,255,0.8)"/>
+                        <stop offset="70%" style="stop-color:rgba(255,255,255,0.4)"/>
+                        <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+                    </linearGradient>
+                    <linearGradient id="bankGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#5a4a35"/>
+                        <stop offset="50%" style="stop-color:#7a6a55"/>
+                        <stop offset="100%" style="stop-color:#5a4a35"/>
+                    </linearGradient>
+                </defs>
+                
+                <!-- River banks (outer) -->
+                <path class="river-bank" d="M 60,-50 C 80,150 160,200 120,350 C 80,500 20,550 60,700 C 100,850 180,900 140,1050 C 100,1200 40,1300 80,1550 L 160,1550 C 120,1300 180,1200 220,1050 C 260,900 180,850 140,700 C 100,550 160,500 200,350 C 240,200 160,150 140,-50 Z"/>
+                
+                <!-- River banks (inner - sandy) -->
+                <path class="river-bank-inner" d="M 60,-50 C 80,150 160,200 120,350 C 80,500 20,550 60,700 C 100,850 180,900 140,1050 C 100,1200 40,1300 80,1550 L 160,1550 C 120,1300 180,1200 220,1050 C 260,900 180,850 140,700 C 100,550 160,500 200,350 C 240,200 160,150 140,-50 Z"/>
+                
+                <!-- River water -->
+                <path class="river-water" d="M 70,-50 C 88,150 163,200 125,350 C 87,500 32,550 68,700 C 104,850 177,900 142,1050 C 107,1200 50,1300 85,1550 L 155,1550 C 118,1300 173,1200 210,1050 C 247,900 173,850 137,700 C 101,550 155,500 192,350 C 229,200 155,150 137,-50 Z"/>
+                
+                <!-- River edge (dark line) -->
+                <path class="river-bank-path" d="M 70,-50 C 88,150 163,200 125,350 C 87,500 32,550 68,700 C 104,850 177,900 142,1050"/>
+                <path class="river-bank-path" d="M 137,-50 C 155,150 229,200 192,350 C 155,500 101,550 137,700 C 173,850 247,900 210,1050"/>
+                
+                <!-- River highlight/shimmer -->
+                <path class="river-highlight" d="M 90,-50 C 103,150 168,200 135,350 C 102,500 55,550 83,700 C 111,850 172,900 147,1050 C 122,1200 72,1300 95,1550 L 135,1550 C 108,1300 158,1200 188,1050 C 218,900 158,850 128,700 C 98,550 148,500 178,350 C 208,200 138,150 123,-50 Z"/>
+                
+                <!-- Animated ripples -->
+                <path class="river-ripples" d="M 100,100 Q 115,100 130,100"/>
+                <path class="river-ripples" d="M 90,300 Q 110,300 130,300" style="animation-delay: -1s"/>
+                <path class="river-ripples" d="M 70,500 Q 95,500 120,500" style="animation-delay: -2s"/>
+                <path class="river-ripples" d="M 85,700 Q 110,700 135,700" style="animation-delay: -0.5s"/>
+                <path class="river-ripples" d="M 120,900 Q 145,900 170,900" style="animation-delay: -1.5s"/>
+            </svg>
+        </div>
+        
+        <!-- Walking Villagers Layer -->
+        <div class="villagers-layer">
+            <!-- Villager 1 - Worker going to mine -->
+            <div class="villager worker v1">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+            
+            <!-- Villager 2 - Farmer going to farm -->
+            <div class="villager farmer v2">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+            
+            <!-- Villager 3 - Guard patrolling -->
+            <div class="villager guard v3">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+            
+            <!-- Villager 4 - Merchant -->
+            <div class="villager merchant v4">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+            
+            <!-- Villager 5 - Worker -->
+            <div class="villager worker v5">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+            
+            <!-- Villager 6 - Farmer -->
+            <div class="villager farmer v6">
+                <div class="villager-body"></div>
+                <div class="villager-legs"></div>
+            </div>
+        </div>
+
+        <!-- Buildings Layer -->
+        <div class="buildings-layer">
+            <!-- Using free isometric assets from OpenGameArt (CC0/CC-BY License) -->
+            
+            <div class="building" id="castle" onclick="showModal('castle')">
+                <img src="assets/buildings/tavern.png" alt="Castle">
+                <div class="bld-level">3</div>
+                <div class="bld-name">Stronghold</div>
+            </div>
+            
+            <div class="building" id="mine" onclick="showModal('mine')">
+                <img src="assets/buildings/tower2.png" alt="Mine">
+                <div class="bld-level">2</div>
+                <div class="bld-name">Iron Mine</div>
+            </div>
+            
+            <div class="building" id="farm" onclick="showModal('farm')">
+                <img src="assets/buildings/house.png" alt="Farm">
+                <div class="bld-level">2</div>
+                <div class="bld-name">Farm</div>
+            </div>
+            
+            <div class="building" id="barracks" onclick="showModal('barracks')">
+                <img src="assets/buildings/blacksmith.png" alt="Barracks">
+                <div class="bld-level">2</div>
+                <div class="bld-name">Barracks</div>
+            </div>
+            
+            <div class="building" id="forge" onclick="showModal('forge')">
+                <img src="assets/buildings/blacksmith.png" alt="Forge">
+                <div class="bld-level">2</div>
+                <div class="bld-name">Forge</div>
+            </div>
+            
+            <div class="building" id="treasury" onclick="showModal('treasury')">
+                <img src="assets/buildings/tower.png" alt="Treasury">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Treasury</div>
+            </div>
+            
+            <div class="building" id="watchtower" onclick="showModal('watchtower')">
+                <img src="assets/buildings/tower.png" alt="Watchtower">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Watchtower</div>
+            </div>
+            
+            <div class="building" id="training" onclick="showModal('training')">
+                <img src="assets/buildings/house.png" alt="Training Ground">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Training Ground</div>
+            </div>
+            
+            <div class="building" id="market" onclick="showModal('market')">
+                <img src="assets/buildings/tavern.png" alt="Marketplace">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Marketplace</div>
+            </div>
+            
+            <div class="building" id="academy" onclick="showModal('academy')">
+                <img src="assets/buildings/house.png" alt="Academy">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Academy</div>
+            </div>
+            
+            <div class="building" id="shrine" onclick="showModal('shrine')">
+                <img src="assets/buildings/tower2.png" alt="Shrine">
+                <div class="bld-level">1</div>
+                <div class="bld-name">Shrine</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="resource">
+            <span class="resource-icon">🪙</span>
+            <span class="resource-amount" id="gold">5,000</span>
+            <span class="resource-rate" id="gR">+3/m</span>
+        </div>
+        <div class="resource">
+            <span class="resource-icon">🌾</span>
+            <span class="resource-amount" id="food">3,000</span>
+            <span class="resource-rate" id="fR">+16/m</span>
+        </div>
+        <div class="resource">
+            <span class="resource-icon">⛏️</span>
+            <span class="resource-amount" id="iron">1,000</span>
+            <span class="resource-rate" id="iR">+10/m</span>
+        </div>
+    </header>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="home-base.html" class="nav-btn active">
+            <span class="nav-icon">🏰</span>
+            <span>Base</span>
+        </a>
+        <a href="heroes.html" class="nav-btn">
+            <span class="nav-icon">⚔️</span>
+            <span>Heroes</span>
+        </a>
+        <a href="battle.html" class="nav-btn battle">
+            <span class="nav-icon">🎮</span>
+            <span>Battle</span>
+        </a>
+    </nav>
+
+    <!-- Modal -->
+    <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <button class="close-x" onclick="closeModal()">&times;</button>
+            <h2 id="mTitle">Building</h2>
+            <div class="modal-status" id="mStatus"></div>
+            <p id="mDesc"></p>
+            <div class="stats" id="mStats"></div>
+            <button class="modal-btn" id="mBtn" onclick="doBuild()">Build</button>
+            <div class="costs" id="mCosts"></div>
+        </div>
+    </div>
+
+    <script>
+        const DATA = {
+            castle: { name: 'Stronghold', desc: 'The heart of your kingdom. Upgrading unlocks new buildings and increases your power.', cost: { gold: 200, iron: 100 }, effect: 'Unlocks buildings' },
+            mine: { name: 'Iron Mine', desc: 'Extracts valuable iron ore from deep within the mountain.', cost: { gold: 150, food: 50 }, effect: '+5 Iron/min', prod: { iron: 5 } },
+            farm: { name: 'Farm', desc: 'Grows crops to feed your warriors and villagers.', cost: { gold: 100 }, effect: '+8 Food/min', prod: { food: 8 } },
+            barracks: { name: 'Barracks', desc: 'Train mighty warriors to fight in epic battles.', cost: { gold: 200, iron: 80 }, effect: 'Train troops', req: { castle: 2 } },
+            forge: { name: 'Forge', desc: 'Craft powerful weapons and armor for your warriors.', cost: { gold: 250, iron: 120 }, effect: 'Craft gear', req: { castle: 2 } },
+            treasury: { name: 'Treasury', desc: 'A secure vault to store your precious gold.', cost: { gold: 300 }, effect: '+1000 Gold cap', req: { castle: 2 } },
+            watchtower: { name: 'Watchtower', desc: 'Scouts reveal enemy information before battle.', cost: { gold: 180, iron: 60 }, effect: 'Enemy intel', req: { castle: 3 } },
+            training: { name: 'Training Ground', desc: 'Warriors train here to gain experience faster.', cost: { gold: 200, food: 100 }, effect: '+20% XP', req: { barracks: 1 } },
+            market: { name: 'Marketplace', desc: 'Trade goods and resources for profit.', cost: { gold: 250, food: 80 }, effect: '+3 Gold/min', prod: { gold: 3 }, req: { castle: 2 } },
+            academy: { name: 'Academy', desc: 'Research new technologies and upgrades.', cost: { gold: 350, iron: 100 }, effect: 'Research', req: { castle: 3 } },
+            shrine: { name: 'Shrine', desc: 'A sacred place that blesses your heroes with power.', cost: { gold: 200 }, effect: '+10% Power', req: { castle: 2 } }
+        };
+
+        let G = {
+            res: { gold: 5000, food: 3000, iron: 1000 },
+            lvl: { castle: 3, mine: 2, farm: 2, barracks: 2, forge: 2, treasury: 1, watchtower: 1, training: 1, market: 1, academy: 1, shrine: 1 }
+        };
+
+        let cur = null;
+
+        function update() {
+            document.getElementById('gold').textContent = Math.floor(G.res.gold).toLocaleString();
+            document.getElementById('food').textContent = Math.floor(G.res.food).toLocaleString();
+            document.getElementById('iron').textContent = Math.floor(G.res.iron).toLocaleString();
+
+            let r = { gold: 0, food: 0, iron: 0 };
+            for (let k in G.lvl) {
+                if (G.lvl[k] > 0 && DATA[k].prod) {
+                    for (let p in DATA[k].prod) r[p] += DATA[k].prod[p] * G.lvl[k];
+                }
+            }
+
+            document.getElementById('gR').textContent = r.gold ? `+${r.gold}/m` : '';
+            document.getElementById('fR').textContent = r.food ? `+${r.food}/m` : '';
+            document.getElementById('iR').textContent = r.iron ? `+${r.iron}/m` : '';
+
+            for (let k in G.lvl) {
+                const el = document.getElementById(k);
+                if (el) {
+                    el.classList.toggle('abandoned', G.lvl[k] === 0);
+                    const lvlBadge = el.querySelector('.bld-level');
+                    if (lvlBadge && G.lvl[k] > 0) lvlBadge.textContent = G.lvl[k];
+                }
+            }
+        }
+
+        function tick() {
+            for (let k in G.lvl) {
+                if (G.lvl[k] > 0 && DATA[k].prod) {
+                    for (let p in DATA[k].prod) G.res[p] += (DATA[k].prod[p] * G.lvl[k]) / 60;
+                }
+            }
+            update();
+        }
+
+        function getCost(k) {
+            const d = DATA[k], m = Math.pow(1.5, G.lvl[k]), c = {};
+            for (let r in d.cost) c[r] = Math.floor(d.cost[r] * m);
+            return c;
+        }
+
+        function canPay(c) { for (let r in c) if (G.res[r] < c[r]) return false; return true; }
+        function meetsReq(k) { const d = DATA[k]; if (!d.req) return true; for (let r in d.req) if (G.lvl[r] < d.req[r]) return false; return true; }
+
+        function showModal(k) {
+            cur = k;
+            const d = DATA[k], lv = G.lvl[k], c = getCost(k), ok = canPay(c), rq = meetsReq(k);
+
+            document.getElementById('mTitle').textContent = d.name;
+            const st = document.getElementById('mStatus');
+            st.textContent = lv ? `✅ Level ${lv}` : '⚠️ Abandoned';
+            st.className = 'modal-status ' + (lv ? 'ok' : 'no');
+
+            document.getElementById('mDesc').textContent = d.desc;
+
+            let stats = `<div class="stat"><span>Effect</span><span>${d.effect}</span></div>`;
+            if (d.prod && lv) {
+                const pr = Object.entries(d.prod).map(([x, v]) => `+${v * lv}/min`).join(', ');
+                stats += `<div class="stat"><span>Production</span><span>${pr}</span></div>`;
+            }
+            if (d.req && !rq) {
+                const rr = Object.entries(d.req).map(([x, v]) => `${DATA[x].name} Lv.${v}`).join(', ');
+                stats += `<div class="stat" style="color:#FF6B6B"><span>Requires</span><span>${rr}</span></div>`;
+            }
+            document.getElementById('mStats').innerHTML = stats;
+
+            const btn = document.getElementById('mBtn');
+            btn.textContent = lv ? `⬆️ Upgrade to Lv.${lv + 1}` : '🔨 Rebuild';
+            btn.disabled = !ok || !rq;
+
+            const ic = { gold: '🪙', food: '🌾', iron: '⛏️' };
+            document.getElementById('mCosts').innerHTML = Object.entries(c).map(([x, v]) =>
+                `<div class="cost ${G.res[x] >= v ? '' : 'bad'}">${ic[x]} ${v.toLocaleString()}</div>`
+            ).join('');
+
+            document.getElementById('modalBg').classList.add('show');
+        }
+
+        function closeModal() { document.getElementById('modalBg').classList.remove('show'); cur = null; }
+
+        function doBuild() {
+            if (!cur) return;
+            const c = getCost(cur);
+            if (!canPay(c) || !meetsReq(cur)) return;
+            for (let r in c) G.res[r] -= c[r];
+            G.lvl[cur]++;
+            update(); closeModal();
+        }
+
+        update();
+        setInterval(tick, 1000);
+    </script>
+</body>
+</html>
