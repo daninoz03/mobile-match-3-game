@@ -18,11 +18,13 @@
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(180deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
             min-height: 100vh;
+            min-height: 100dvh;
             color: #f0e6d3;
             overflow: hidden;
             position: fixed;
             width: 100%;
             height: 100%;
+            height: 100dvh;
         }
 
         .battle-container {
@@ -32,6 +34,7 @@
             max-width: 500px;
             margin: 0 auto;
             padding: 10px;
+            overflow: hidden;
         }
 
         /* ============ TOP BAR ============ */
@@ -41,6 +44,7 @@
             align-items: center;
             padding: 8px;
             margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .back-btn {
@@ -66,6 +70,7 @@
         /* ============ ENEMY SECTION ============ */
         .enemy-section {
             flex: 0 0 auto;
+            flex-shrink: 0;
             padding: 10px;
             background: linear-gradient(180deg, rgba(60,20,20,0.8) 0%, rgba(40,10,10,0.6) 100%);
             border-radius: 15px;
@@ -151,21 +156,107 @@
 
         /* ============ MATCH-3 BOARD ============ */
         .board-section {
-            flex: 1;
+            flex: 1 1 0;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             padding: 5px 0;
             min-height: 0;
+            overflow: hidden;
         }
 
         .combo-display {
+            flex: 0 0 auto;
             text-align: center;
             height: 28px;
             font-size: 1.1em;
             font-weight: bold;
             color: #ffd700;
             text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .board-area {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .board-area.bomb-shake {
+            animation: boardShake 0.45s ease-out;
+        }
+
+        @keyframes boardShake {
+            0%, 100% { transform: translate(0, 0); }
+            15% { transform: translate(-5px, 3px); }
+            30% { transform: translate(5px, -3px); }
+            45% { transform: translate(-4px, -4px); }
+            60% { transform: translate(4px, 2px); }
+            75% { transform: translate(-2px, 3px); }
+        }
+
+        .explosion-core,
+        .explosion-ring {
+            position: absolute;
+            pointer-events: none;
+            z-index: 60;
+            transform: translate(-50%, -50%);
+        }
+
+        .explosion-core {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #fffacd 20%, #ffd700 35%, #ff6600 55%, transparent 72%);
+            animation: explosionCore 0.55s ease-out forwards;
+        }
+
+        .explosion-ring {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 200, 80, 0.9);
+            box-shadow: 0 0 20px #ff6600, 0 0 40px #ff3300;
+            animation: explosionRing 0.6s ease-out forwards;
+        }
+
+        @keyframes explosionCore {
+            0% { transform: translate(-50%, -50%) scale(0.15); opacity: 1; }
+            35% { transform: translate(-50%, -50%) scale(1.6); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+        }
+
+        @keyframes explosionRing {
+            0% { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+        }
+
+        .tile.bomb-hit {
+            z-index: 25;
+            animation: tileBombBlast 0.5s ease-out forwards;
+            transition: none;
+        }
+
+        @keyframes tileBombBlast {
+            0% { transform: scale(1); filter: brightness(1); }
+            12% { transform: scale(1.35); filter: brightness(3) drop-shadow(0 0 12px #ff8800); }
+            35% { transform: scale(1.15); filter: brightness(2.5); }
+            100% { transform: scale(0) rotate(25deg); opacity: 0; filter: brightness(4); }
+        }
+
+        .bomb-particle {
+            position: absolute;
+            pointer-events: none;
+            font-size: 1.1em;
+            z-index: 70;
+            animation: bombParticleFly 0.65s ease-out forwards;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes bombParticleFly {
+            0% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
         }
 
         .board {
@@ -177,7 +268,12 @@
             border-radius: 12px;
             border: 2px solid #4a3060;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
+            aspect-ratio: 1;
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            max-height: 100%;
         }
 
         .board.processing .tile {
@@ -269,16 +365,9 @@
             100% { transform: scale(0) rotate(360deg); opacity: 0; filter: brightness(2.5) drop-shadow(0 0 35px #cc5de8); }
         }
 
-        .tile.dropping {
-            animation: dropIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        @keyframes dropIn {
-            0% { transform: translateY(-100px) scale(0.8); opacity: 0; }
-            50% { opacity: 1; }
-            75% { transform: translateY(8px) scale(1.02); }
-            90% { transform: translateY(-3px) scale(0.98); }
-            100% { transform: translateY(0) scale(1); }
+        .tile.falling {
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 5;
         }
 
         /* Power-up tiles */
@@ -354,17 +443,29 @@
         /* ============ HERO TEAM SECTION ============ */
         .hero-section {
             flex: 0 0 auto;
-            padding: 10px;
-            background: linear-gradient(180deg, rgba(40,30,60,0.9) 0%, rgba(20,15,30,0.95) 100%);
+            flex-shrink: 0;
+            padding: 10px 12px 12px;
+            background: linear-gradient(180deg, rgba(40,30,60,0.95) 0%, rgba(20,15,30,1) 100%);
             border-radius: 15px;
             border: 2px solid #5a4070;
             margin-top: 8px;
+            z-index: 2;
+        }
+
+        .hero-section-title {
+            text-align: center;
+            font-size: 0.75em;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #b8a0d0;
+            margin-bottom: 8px;
         }
 
         .heroes-row {
             display: flex;
             justify-content: center;
             gap: 8px;
+            flex-wrap: nowrap;
         }
 
         .hero-slot {
@@ -600,11 +701,14 @@
         <!-- Board Section -->
         <div class="board-section">
             <div class="combo-display" id="combo-display"></div>
-            <div class="board" id="board"></div>
+            <div class="board-area">
+                <div class="board" id="board"></div>
+            </div>
         </div>
 
         <!-- Hero Section -->
         <div class="hero-section">
+            <div class="hero-section-title">Your Party</div>
             <div class="heroes-row" id="heroes-row"></div>
         </div>
     </div>
@@ -656,6 +760,8 @@
         let totalWaves = 3;
         let comboCount = 0;
         let cascadeLevel = 0;
+        let pendingVictory = false;
+        let battleEnded = false;
 
         let heroTeam = [];
         let enemies = [];
@@ -900,41 +1006,55 @@
             renderEnemies();
         }
 
+        function createTileElement(x, y) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.dataset.x = x;
+            tile.dataset.y = y;
+            tile.dataset.type = board[y][x];
+
+            let content = `<span class="tile-icon">${ELEMENT_ICONS[board[y][x]] || ''}</span>`;
+
+            if (powerups[y][x] !== POWERUP_TYPES.NONE) {
+                tile.classList.add('powerup');
+                if (powerups[y][x] === POWERUP_TYPES.BOMB) tile.classList.add('powerup-bomb');
+                if (powerups[y][x] === POWERUP_TYPES.LIGHTNING) tile.classList.add('powerup-lightning');
+                if (powerups[y][x] === POWERUP_TYPES.COLOR_BOMB) tile.classList.add('powerup-colorbomb');
+                content += `<span class="powerup-icon">${POWERUP_ICONS[powerups[y][x]]}</span>`;
+            }
+
+            tile.innerHTML = content;
+
+            if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
+                tile.classList.add('selected');
+            }
+
+            if (board[y][x] === -1) {
+                tile.style.visibility = 'hidden';
+            }
+
+            tile.onclick = () => handleTileClick(x, y);
+            return tile;
+        }
+
         function renderBoard() {
             const boardEl = document.getElementById('board');
             boardEl.innerHTML = '';
 
             for (let y = 0; y < BOARD_SIZE; y++) {
                 for (let x = 0; x < BOARD_SIZE; x++) {
-                    const tile = document.createElement('div');
-                    tile.className = 'tile';
-                    tile.dataset.x = x;
-                    tile.dataset.y = y;
-                    tile.dataset.type = board[y][x];
-                    
-                    let content = `<span class="tile-icon">${ELEMENT_ICONS[board[y][x]] || ''}</span>`;
-                    
-                    if (powerups[y][x] !== POWERUP_TYPES.NONE) {
-                        tile.classList.add('powerup');
-                        if (powerups[y][x] === POWERUP_TYPES.BOMB) tile.classList.add('powerup-bomb');
-                        if (powerups[y][x] === POWERUP_TYPES.LIGHTNING) tile.classList.add('powerup-lightning');
-                        if (powerups[y][x] === POWERUP_TYPES.COLOR_BOMB) tile.classList.add('powerup-colorbomb');
-                        content += `<span class="powerup-icon">${POWERUP_ICONS[powerups[y][x]]}</span>`;
-                    }
-                    
-                    tile.innerHTML = content;
-                    
-                    if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
-                        tile.classList.add('selected');
-                    }
-                    
-                    if (board[y][x] === -1) {
-                        tile.style.visibility = 'hidden';
-                    }
-                    
-                    tile.onclick = () => handleTileClick(x, y);
-                    boardEl.appendChild(tile);
+                    boardEl.appendChild(createTileElement(x, y));
                 }
+            }
+        }
+
+        function areAllEnemiesDead() {
+            return enemies.every(e => e.currentHp <= 0);
+        }
+
+        function markPendingVictoryIfWon() {
+            if (areAllEnemiesDead() && currentWave >= totalWaves) {
+                pendingVictory = true;
             }
         }
 
@@ -997,7 +1117,7 @@
 
         // ============ TILE INTERACTION ============
         function handleTileClick(x, y) {
-            if (isProcessing || board[y][x] === -1) return;
+            if (isProcessing || battleEnded || pendingVictory || board[y][x] === -1) return;
             initAudio();
 
             if (!selectedTile) {
@@ -1016,6 +1136,10 @@
             }
         }
 
+        function getTileElement(x, y) {
+            return document.querySelector(`.tile[data-x="${x}"][data-y="${y}"]`);
+        }
+
         async function trySwap(x1, y1, x2, y2) {
             isProcessing = true;
             selectedTile = null;
@@ -1023,26 +1147,36 @@
             
             sounds.swap();
 
+            await animateSwap(x1, y1, x2, y2);
+
             [board[y1][x1], board[y2][x2]] = [board[y2][x2], board[y1][x1]];
             [powerups[y1][x1], powerups[y2][x2]] = [powerups[y2][x2], powerups[y1][x1]];
-            
-            await animateSwap(x1, y1, x2, y2);
+            renderBoard();
 
             const matches = findMatches();
             
             if (matches.length === 0) {
+                await animateSwap(x1, y1, x2, y2);
                 [board[y1][x1], board[y2][x2]] = [board[y2][x2], board[y1][x1]];
                 [powerups[y1][x1], powerups[y2][x2]] = [powerups[y2][x2], powerups[y1][x1]];
-                await animateSwap(x1, y1, x2, y2);
+                renderBoard();
                 isProcessing = false;
                 document.getElementById('board').classList.remove('processing');
-                renderBoard();
                 return;
             }
 
             comboCount = 0;
             cascadeLevel = 0;
             await processMatches();
+            
+            if (pendingVictory) {
+                battleEnded = true;
+                isProcessing = false;
+                document.getElementById('board').classList.remove('processing');
+                await sleep(200);
+                showBattleResult(true);
+                return;
+            }
             
             await enemyTurn();
             
@@ -1054,22 +1188,30 @@
         }
 
         async function animateSwap(x1, y1, x2, y2) {
-            renderBoard();
-            const tiles = document.querySelectorAll('.tile');
-            const tile1 = tiles[y1 * BOARD_SIZE + x1];
-            const tile2 = tiles[y2 * BOARD_SIZE + x2];
-            
-            if (tile1) tile1.classList.add('swapping');
-            if (tile2) tile2.classList.add('swapping');
-            
-            const dx = (x2 - x1) * 100;
-            const dy = (y2 - y1) * 100;
-            
-            if (tile1) tile1.style.transform = `translate(${dx}%, ${dy}%)`;
-            if (tile2) tile2.style.transform = `translate(${-dx}%, ${-dy}%)`;
-            
+            const tile1 = getTileElement(x1, y1);
+            const tile2 = getTileElement(x2, y2);
+            if (!tile1 || !tile2) return;
+
+            const rect1 = tile1.getBoundingClientRect();
+            const rect2 = tile2.getBoundingClientRect();
+            const dx = rect2.left - rect1.left;
+            const dy = rect2.top - rect1.top;
+
+            tile1.classList.add('swapping');
+            tile2.classList.add('swapping');
+            tile1.style.transform = 'translate(0, 0)';
+            tile2.style.transform = 'translate(0, 0)';
+            void tile1.offsetWidth;
+
+            tile1.style.transform = `translate(${dx}px, ${dy}px)`;
+            tile2.style.transform = `translate(${-dx}px, ${-dy}px)`;
+
             await sleep(400);
-            renderBoard();
+
+            tile1.style.transform = '';
+            tile2.style.transform = '';
+            tile1.classList.remove('swapping');
+            tile2.classList.remove('swapping');
         }
 
         // ============ MATCH DETECTION ============
@@ -1229,15 +1371,12 @@
                 // Deal damage
                 dealDamageVisual(totalDamage);
                 
-                // Activate powerups
-                if (powerupsToActivate.length > 0) {
-                    sounds.bomb();
-                    for (const pu of powerupsToActivate) {
-                        activatePowerupInstant(pu.x, pu.y, pu.type, pu.tileType);
-                    }
+                // Activate powerups with effects
+                for (const pu of powerupsToActivate) {
+                    await activatePowerupWithEffect(pu.x, pu.y, pu.type, pu.tileType);
                 }
                 
-                // Drop and refill - smooth timing
+                // Drop and refill
                 await dropAndRefill(450);
                 
                 matches = findMatches();
@@ -1245,8 +1384,10 @@
             
             document.getElementById('combo-display').textContent = '';
             
-            // Check if wave is complete after all cascades
-            await checkWaveComplete();
+            // Advance to next wave mid-turn if cleared (victory waits until cascades finish)
+            if (areAllEnemiesDead() && !pendingVictory) {
+                await checkWaveComplete();
+            }
         }
 
         async function animateMatches(matches, duration = 550, newPowerupPositions = new Set()) {
@@ -1280,22 +1421,22 @@
             renderHeroes();
         }
 
-        function activatePowerupInstant(x, y, type, tileType) {
+        function getPowerupTilesToClear(x, y, type, tileType) {
             const tilesToClear = [];
-            
+
             if (type === POWERUP_TYPES.BOMB) {
                 for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
                         const nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+                        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE && board[ny][nx] !== -1) {
                             tilesToClear.push({ x: nx, y: ny });
                         }
                     }
                 }
             } else if (type === POWERUP_TYPES.LIGHTNING) {
                 for (let i = 0; i < BOARD_SIZE; i++) {
-                    tilesToClear.push({ x: i, y });
-                    tilesToClear.push({ x, y: i });
+                    if (board[y][i] !== -1) tilesToClear.push({ x: i, y });
+                    if (board[i][x] !== -1) tilesToClear.push({ x, y: i });
                 }
             } else if (type === POWERUP_TYPES.COLOR_BOMB) {
                 for (let ty = 0; ty < BOARD_SIZE; ty++) {
@@ -1306,50 +1447,168 @@
                     }
                 }
             }
-            
-            const extraDamage = tilesToClear.length * 30;
-            
+
+            const seen = new Set();
+            return tilesToClear.filter(t => {
+                const key = `${t.x},${t.y}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function getTileCenterOnBoard(x, y) {
+            const tile = getTileElement(x, y);
+            const boardEl = document.getElementById('board');
+            if (!tile || !boardEl) return null;
+            const tr = tile.getBoundingClientRect();
+            const br = boardEl.getBoundingClientRect();
+            return {
+                left: tr.left - br.left + tr.width / 2,
+                top: tr.top - br.top + tr.height / 2
+            };
+        }
+
+        function spawnBombParticles(tileEl, isCenter) {
+            const boardEl = document.getElementById('board');
+            const boardRect = boardEl.getBoundingClientRect();
+            const rect = tileEl.getBoundingClientRect();
+            const icons = ['💥', '🔥', '✨', '💨', '⭐'];
+            const count = isCenter ? 10 : 4;
+
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'bomb-particle';
+                particle.textContent = icons[Math.floor(Math.random() * icons.length)];
+                const angle = Math.random() * Math.PI * 2;
+                const dist = (isCenter ? 55 : 28) + Math.random() * 35;
+                particle.style.left = `${rect.left - boardRect.left + rect.width / 2}px`;
+                particle.style.top = `${rect.top - boardRect.top + rect.height / 2}px`;
+                particle.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                particle.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+                boardEl.appendChild(particle);
+                setTimeout(() => particle.remove(), 700);
+            }
+        }
+
+        async function animateBombExplosion(centerX, centerY, tilesToClear) {
+            const boardEl = document.getElementById('board');
+            const boardArea = document.querySelector('.board-area');
+            const center = getTileCenterOnBoard(centerX, centerY);
+            if (!center || !boardEl) return;
+
+            sounds.bomb();
+
+            const core = document.createElement('div');
+            core.className = 'explosion-core';
+            core.style.left = `${center.left}px`;
+            core.style.top = `${center.top}px`;
+            boardEl.appendChild(core);
+
+            const ring = document.createElement('div');
+            ring.className = 'explosion-ring';
+            ring.style.left = `${center.left}px`;
+            ring.style.top = `${center.top}px`;
+            boardEl.appendChild(ring);
+
+            boardArea?.classList.add('bomb-shake');
+
+            const sorted = [...tilesToClear].sort((a, b) => {
+                const distA = Math.abs(a.x - centerX) + Math.abs(a.y - centerY);
+                const distB = Math.abs(b.x - centerX) + Math.abs(b.y - centerY);
+                return distA - distB;
+            });
+
+            for (const tile of sorted) {
+                const el = getTileElement(tile.x, tile.y);
+                if (!el) continue;
+                const dist = Math.abs(tile.x - centerX) + Math.abs(tile.y - centerY);
+                el.style.animationDelay = `${dist * 45}ms`;
+                el.classList.add('bomb-hit');
+                spawnBombParticles(el, dist === 0);
+            }
+
+            await sleep(580);
+
+            core.remove();
+            ring.remove();
+            boardArea?.classList.remove('bomb-shake');
+        }
+
+        async function activatePowerupWithEffect(x, y, type, tileType) {
+            const tilesToClear = getPowerupTilesToClear(x, y, type, tileType);
+            if (tilesToClear.length === 0) return;
+
+            renderBoard();
+
+            if (type === POWERUP_TYPES.BOMB) {
+                await animateBombExplosion(x, y, tilesToClear);
+            } else {
+                sounds.bomb();
+                for (const tile of tilesToClear) {
+                    const el = getTileElement(tile.x, tile.y);
+                    if (el) el.classList.add('matching');
+                }
+                await sleep(450);
+            }
+
             for (const tile of tilesToClear) {
                 board[tile.y][tile.x] = -1;
                 powerups[tile.y][tile.x] = POWERUP_TYPES.NONE;
             }
-            
-            dealDamageVisual(extraDamage);
+
+            dealDamageVisual(tilesToClear.length * 30);
         }
 
-        async function dropAndRefill(duration = 300) {
-            // Drop existing tiles
+        async function dropAndRefill(duration = 400) {
+            const moveData = [];
+
             for (let x = 0; x < BOARD_SIZE; x++) {
-                let emptyY = BOARD_SIZE - 1;
+                let emptySpaces = 0;
                 for (let y = BOARD_SIZE - 1; y >= 0; y--) {
-                    if (board[y][x] !== -1) {
-                        if (y !== emptyY) {
-                            board[emptyY][x] = board[y][x];
-                            powerups[emptyY][x] = powerups[y][x];
-                            board[y][x] = -1;
-                            powerups[y][x] = POWERUP_TYPES.NONE;
-                        }
-                        emptyY--;
+                    if (board[y][x] === -1) {
+                        emptySpaces++;
+                    } else if (emptySpaces > 0) {
+                        moveData.push({ x, fromY: y, toY: y + emptySpaces, isNew: false });
+                        board[y + emptySpaces][x] = board[y][x];
+                        powerups[y + emptySpaces][x] = powerups[y][x];
+                        board[y][x] = -1;
+                        powerups[y][x] = POWERUP_TYPES.NONE;
                     }
                 }
-                
-                // Fill empty with new tiles
-                for (let y = emptyY; y >= 0; y--) {
-                    board[y][x] = Math.floor(Math.random() * TILE_TYPES);
+                for (let i = 0; i < emptySpaces; i++) {
+                    const y = i;
+                    board[y][x] = getRandomTile(x, y);
                     powerups[y][x] = POWERUP_TYPES.NONE;
+                    moveData.push({ x, fromY: -(i + 1), toY: y, isNew: true });
                 }
             }
-            
-            // Animate drop
-            renderBoard();
-            const tiles = document.querySelectorAll('.tile');
-            tiles.forEach((tile, i) => {
-                const y = Math.floor(i / BOARD_SIZE);
-                if (y < 3) {
-                    tile.classList.add('dropping');
+
+            if (moveData.length === 0) return;
+
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let y = 0; y < BOARD_SIZE; y++) {
+                for (let x = 0; x < BOARD_SIZE; x++) {
+                    if (board[y][x] === -1) continue;
+                    const tile = createTileElement(x, y);
+                    const movement = moveData.find(m => m.x === x && m.toY === y);
+                    if (movement) {
+                        const distance = movement.toY - movement.fromY;
+                        tile.classList.add('falling');
+                        tile.style.transform = `translateY(${-distance * 100}%)`;
+                    }
+                    boardEl.appendChild(tile);
                 }
+            }
+
+            await sleep(50);
+
+            document.querySelectorAll('.tile.falling').forEach(tile => {
+                tile.style.transform = '';
             });
-            
+
             await sleep(duration);
             renderBoard();
         }
@@ -1380,6 +1639,8 @@
                 enemy.currentHp = 0;
                 renderEnemies();
             }
+
+            markPendingVictoryIfWon();
         }
 
         // Blocking damage for abilities
@@ -1411,6 +1672,7 @@
             if (enemy.currentHp <= 0) {
                 enemy.currentHp = 0;
                 renderEnemies();
+                markPendingVictoryIfWon();
                 await checkWaveComplete();
             }
         }
@@ -1496,6 +1758,7 @@
                         }
                     }
                     renderEnemies();
+                    markPendingVictoryIfWon();
                     await checkWaveComplete();
                     break;
                 case 'nature':
@@ -1524,6 +1787,11 @@
             }
             
             isProcessing = false;
+
+            if (pendingVictory) {
+                battleEnded = true;
+                showBattleResult(true);
+            }
         }
 
         function selectTarget(index) {
@@ -1535,20 +1803,21 @@
 
         // ============ WAVE & BATTLE ============
         async function checkWaveComplete() {
-            if (enemies.every(e => e.currentHp <= 0)) {
-                if (currentWave >= totalWaves) {
-                    await sleep(500);
-                    showBattleResult(true);
-                } else {
-                    currentWave++;
-                    await sleep(500);
-                    generateEnemyWave();
-                    renderEnemies();
-                }
+            if (!areAllEnemiesDead()) return;
+
+            if (currentWave >= totalWaves) {
+                pendingVictory = true;
+                return;
             }
+
+            currentWave++;
+            await sleep(500);
+            generateEnemyWave();
+            renderEnemies();
         }
 
         function showBattleResult(victory) {
+            battleEnded = true;
             const result = document.getElementById('battle-result');
             const title = document.getElementById('result-title');
             const rewards = document.getElementById('result-rewards');
